@@ -17,10 +17,11 @@ requires-python = ">=3.13"
 dependencies = [
     # Core runtime dependencies
     "python-dotenv>=1.0.0",
-    "openai>=1.50.0",
+    "openai>=1.95.0",
     "langchain>=0.3.26",
     "langchain-openai>=0.3.27",
     "langchain-core>=0.3.68",
+    "langgraph>=0.5.2",
     "pydantic>=2.11.7",
     "typer[all]>=0.16.0",
     "pydantic-settings>=2.10.1",
@@ -31,11 +32,13 @@ Homepage = "https://github.com/w2kr1stn/make_it_real"
 Repository = "https://github.com/w2kr1stn/make_it_real"
 
 [project.scripts]
-format = "manage:lint"
+format = "manage:format"
+test = "manage:test"
 aiask = "aiask.cli:app"
+makeitreal = "makeitreal.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["aiask"]
+packages = ["aiask", "makeitreal"]
 
 [dependency-groups]
 dev = [
@@ -43,6 +46,7 @@ dev = [
     # Testing
     "pytest>=8.4.0",
     "pytest-cov>=6.1.1",
+    "pytest-asyncio>=0.25.0",
     # Code Quality & Linting
     "ruff>=0.11.12",
 ]
