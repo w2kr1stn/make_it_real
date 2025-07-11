@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build "
+
+[project]
+name = "makeitreal"
+version = "0.1.0"
+description = "Multi-agent end user application with modern chatbot UI to structure ideas for apps, prepare them technically and work out a structured plan to systematically implement a first, functional prototype."
+authors = [
+    {name = "Dennis Fietz", email = "dennis@fietz.berlin"},
+    {name = "Max Goltzsche", email = "max.goltzsche@gmail.com"},
+    {name = "Willi Kristen", email = "willi.kristen@live.de"},
+]
+license = {text = "CC0-1.0"}
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # Core runtime dependencies
+    "python-dotenv>=1.0.0",
+    "openai>=1.50.0",
+    "langchain>=0.3.26",
+    "langchain-openai>=0.3.27",
+    "langchain-core>=0.3.68",
+    "pydantic>=2.11.7",
+    "typer[all]>=0.16.0",
+    "pydantic-settings>=2.10.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/w2kr1stn/make_it_real"
+Repository = "https://github.com/w2kr1stn/make_it_real"
+
+[project.scripts]
+format = "manage:lint"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aiask"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.2.0",
+    # Testing
+    "pytest>=8.4.0",
+    "pytest-cov>=6.1.1",
+    # Code Quality & Linting
+    "ruff>=0.11.12",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "N",    # pep8-naming
+    "B",    # flake8-bugbear
+    "I",    # isort
+    "UP",   # pyupgrade
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "B008",  # FastAPI Depends() pattern in argument defaults
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--strict-markers --disable-warnings -m 'not slow and not integration'"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "asyncio: marks tests as asyncio tests",
+    "integration: marks tests as integration tests requiring external services",
+    "live: marks tests that make real API calls",
+]
