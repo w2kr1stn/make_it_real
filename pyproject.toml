@@ -31,11 +31,13 @@ Homepage = "https://github.com/w2kr1stn/make_it_real"
 Repository = "https://github.com/w2kr1stn/make_it_real"
 
 [project.scripts]
-format = "manage:lint"
+format = "manage:format"
+test = "manage:test"
 aiask = "aiask.cli:app"
+makeitreal = "makeitreal.cli:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["aiask"]
+packages = ["aiask", "makeitreal"]
 
 [dependency-groups]
 dev = [
