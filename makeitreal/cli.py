@@ -26,53 +26,48 @@ def idea(
 
     console.print(Panel("🧠 Analyzing your product idea...", style="blue"))
 
-    try:
-        workflow = IdeationWorkflow()
-        thread_id = "cli_session"  # Use consistent thread_id for checkpointing
+    workflow = IdeationWorkflow()
+    thread_id = "cli_session"  # Use consistent thread_id for checkpointing
 
-        with console.status("[green]Workflow processing...", spinner="dots"):
-            result = asyncio.run(workflow.run(description, thread_id))
+    with console.status("[green]Workflow processing...", spinner="dots"):
+        result = asyncio.run(workflow.run(description, thread_id))
 
-        # Check if workflow was interrupted for human review
-        # LangGraph interrupts return the current state before the interrupt node
-        if result.get("evaluation_results") and result.get("current_phase") == "evaluated":
-            console.print()
-            console.print(
-                Panel(
-                    "🔍 Technical specification and evaluation completed!\n"
-                    "The workflow is paused for your review.",
-                    title="Human Review Required",
-                    style="yellow",
-                )
+    # Check if workflow was interrupted for human review
+    # LangGraph interrupts return the current state before the interrupt node
+    if result.get("evaluation_results") and result.get("current_phase") == "evaluated":
+        console.print()
+        console.print(
+            Panel(
+                "🔍 Technical specification and evaluation completed!\n"
+                "The workflow is paused for your review.",
+                title="Human Review Required",
+                style="yellow",
             )
+        )
 
-            result = _handle_human_review(workflow, result, thread_id)
+        result = _handle_human_review(workflow, result, thread_id)
 
-        # Handle rejection case
-        if result.get("current_phase") == "rejected":
-            console.print()
-            console.print(
-                Panel(
-                    "The workflow was terminated because the specification was rejected.\n"
-                    "You can run the command again to generate a new specification.",
-                    title="Workflow Terminated",
-                    style="red",
-                )
+    # Handle rejection case
+    if result.get("current_phase") == "rejected":
+        console.print()
+        console.print(
+            Panel(
+                "The workflow was terminated because the specification was rejected.\n"
+                "You can run the command again to generate a new specification.",
+                title="Workflow Terminated",
+                style="red",
             )
-            return
+        )
+        return
 
-        if result.get("error"):
-            raise Exception(result["error"])
+    if result.get("error"):
+        raise Exception(result["error"])
 
-        curation = result["product_idea"]
-        technical_spec = result.get("technical_spec", {})
-        evaluation_results = result.get("evaluation_results", {})
+    curation = result["product_idea"]
+    technical_spec = result.get("technical_spec", {})
+    evaluation_results = result.get("evaluation_results", {})
 
-        _display_structured_results(curation, technical_spec, evaluation_results)
-
-    except Exception as e:
-        console.print(Panel(f"❌ Error: {str(e)}", title="Error", style="red"))
-        raise typer.Exit(1) from e
+    _display_structured_results(curation, technical_spec, evaluation_results)
 
 
 def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, thread_id: str) -> dict:
