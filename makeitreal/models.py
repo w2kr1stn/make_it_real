@@ -32,3 +32,38 @@ class CurationResult(BaseModel):
         ..., description="Priority features for initial implementation"
     )
     next_steps: list[str] = Field(..., description="Actionable next steps for validation")
+
+
+class UserStory(BaseModel):
+    """INVEST-compliant user story for product development."""
+
+    title: str = Field(..., description="User story title in 'As a... I want... So that...' format")
+    description: str = Field(..., description="Detailed user story description")
+    acceptance_criteria: list[str] = Field(..., description="Testable acceptance criteria")
+    definition_of_done: list[str] = Field(..., description="Definition of done checklist")
+    priority: str = Field(..., description="Priority level: high, medium, low")
+    estimate: str = Field(default="", description="Story point estimate or effort estimation")
+
+
+class PRDSection(BaseModel):
+    """Individual section of a Product Requirements Document."""
+
+    title: str = Field(..., description="Section title")
+    content: str = Field(..., description="Section content")
+    subsections: list["PRDSection"] = Field(default=[], description="Nested subsections")
+
+
+class TechnicalSpec(BaseModel):
+    """Complete technical specification generated from curated idea."""
+
+    press_release: dict[str, str] = Field(..., description="Amazon Working Backwards press release")
+    faq: dict[str, list[str]] = Field(..., description="Internal and customer FAQs")
+    user_stories: list[UserStory] = Field(..., description="INVEST-compliant user stories")
+    technical_requirements: list[str] = Field(..., description="Core technical requirements")
+    success_metrics: list[str] = Field(..., description="Key success metrics and KPIs")
+    timeline: str = Field(..., description="Estimated development timeline")
+    sections: list[PRDSection] = Field(default=[], description="Additional PRD sections")
+
+
+# Enable forward references for recursive PRDSection model
+PRDSection.model_rebuild()
