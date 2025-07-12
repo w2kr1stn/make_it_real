@@ -35,11 +35,11 @@ def idea(
 
         # Check if workflow was interrupted for human review
         # LangGraph interrupts return the current state before the interrupt node
-        if result.get("technical_spec") and result.get("current_phase") == "specified":
+        if result.get("evaluation_results") and result.get("current_phase") == "evaluated":
             console.print()
             console.print(
                 Panel(
-                    "🔍 Technical specification generated!\n"
+                    "🔍 Technical specification and evaluation completed!\n"
                     "The workflow is paused for your review.",
                     title="Human Review Required",
                     style="yellow",
@@ -66,8 +66,9 @@ def idea(
 
         curation = result["product_idea"]
         technical_spec = result.get("technical_spec", {})
+        evaluation_results = result.get("evaluation_results", {})
 
-        _display_structured_results(curation, technical_spec)
+        _display_structured_results(curation, technical_spec, evaluation_results)
 
     except Exception as e:
         console.print(Panel(f"❌ Error: {str(e)}", title="Error", style="red"))
@@ -77,10 +78,12 @@ def idea(
 def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, thread_id: str) -> dict:
     """Handle human review workflow interruption."""
 
-    # Display current technical spec for review
+    # Display current technical spec and evaluation for review
     technical_spec = current_result.get("technical_spec", {})
+    evaluation_results = current_result.get("evaluation_results", {})
+
     if technical_spec:
-        _display_review_summary(technical_spec)
+        _display_review_summary(technical_spec, evaluation_results)
 
     console.print()
 
@@ -133,8 +136,8 @@ def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, threa
         return current_result
 
 
-def _display_review_summary(technical_spec: dict) -> None:
-    """Display a summary of the technical specification for review."""
+def _display_review_summary(technical_spec: dict, evaluation_results: dict = None) -> None:
+    """Display a summary of the technical specification and evaluation for review."""
 
     # Press Release
     press_release = technical_spec.get("press_release", {})
@@ -154,16 +157,37 @@ def _display_review_summary(technical_spec: dict) -> None:
 
     stats_table = Table(title="📊 Specification Overview", show_header=False)
     stats_table.add_column("Metric", style="cyan")
-    stats_table.add_column("Count", style="yellow")
+    stats_table.add_column("Value", style="yellow")
 
     stats_table.add_row("User Stories", str(len(user_stories)))
     stats_table.add_row("Technical Requirements", str(len(tech_reqs)))
 
+    # Add evaluation results if available
+    if evaluation_results:
+        feasibility = evaluation_results.get("feasibility_score", 0)
+        go_no_go = evaluation_results.get("go_no_go", "UNKNOWN")
+        stats_table.add_row("Feasibility Score", f"{feasibility:.2f}/1.0")
+        stats_table.add_row("Recommendation", go_no_go)
+
     console.print(stats_table)
 
+    # Display evaluation details if available
+    if evaluation_results:
+        console.print()
+        console.print(
+            Panel(
+                f"**Risk Assessment:** {evaluation_results.get('risk_assessment', 'N/A')}\n\n"
+                f"**Go/No-Go:** {evaluation_results.get('go_no_go', 'UNKNOWN')}",
+                title="🔍 Evaluation Results",
+                style="green" if evaluation_results.get("go_no_go") == "GO" else "red",
+            )
+        )
 
-def _display_structured_results(curation: dict, technical_spec: dict = None) -> None:
-    """Display structured curation results and technical specification using Rich."""
+
+def _display_structured_results(
+    curation: dict, technical_spec: dict = None, evaluation_results: dict = None
+) -> None:
+    """Display structured curation results, technical specification, and evaluation using Rich."""
 
     console.print()
     # Product Idea Overview
@@ -299,6 +323,51 @@ def _display_structured_results(curation: dict, technical_spec: dict = None) -> 
         if timeline:
             timeline_panel = Panel(timeline, title="⏱️ Development Timeline", style="magenta")
             console.print(timeline_panel)
+            console.print()
+
+    # Evaluation Results (if available)
+    if evaluation_results:
+        console.print()
+
+        # Evaluation scores
+        eval_table = Table(title="📊 Feasibility Evaluation", show_header=False)
+        eval_table.add_column("Metric", style="cyan", width=20)
+        eval_table.add_column("Score", style="yellow")
+
+        eval_table.add_row(
+            "Technical Feasibility", f"{evaluation_results.get('feasibility_score', 0):.2f}/1.0"
+        )
+        eval_table.add_row(
+            "Resource Requirements", f"{evaluation_results.get('resource_score', 0):.2f}/1.0"
+        )
+        eval_table.add_row(
+            "Timeline Realism", f"{evaluation_results.get('timeline_score', 0):.2f}/1.0"
+        )
+
+        console.print(eval_table)
+        console.print()
+
+        # Risk assessment and recommendation
+        go_no_go = evaluation_results.get("go_no_go", "UNKNOWN")
+        risk_assessment = evaluation_results.get("risk_assessment", "No assessment available")
+
+        eval_panel = Panel(
+            f"**Risk Assessment:**\n{risk_assessment}\n\n**Final Recommendation:** {go_no_go}",
+            title="🔍 Evaluation Summary",
+            style="green" if go_no_go == "GO" else "red",
+        )
+        console.print(eval_panel)
+
+        # Recommendations
+        recommendations = evaluation_results.get("recommendations", [])
+        if recommendations:
+            console.print()
+            rec_panel = Panel(
+                "\n".join([f"• {rec}" for rec in recommendations[:5]]),  # Show first 5
+                title="💡 Recommendations",
+                style="blue",
+            )
+            console.print(rec_panel)
 
 
 if __name__ == "__main__":
