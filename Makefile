@@ -1,5 +1,5 @@
 IMAGE=make-it-real
-
+IDEA?=task management app for developers
 
 all: help
 
@@ -8,9 +8,13 @@ all: help
 container: ## Build container image.
 	docker build --rm -t $(IMAGE) .
 
-run: IDEA?=task management app for developers
 run: container ## Run container.
 	docker run --rm -ti --network=host --env-file=.env $(IMAGE) "$(IDEA)"
+
+compose-up: container ## Run the compose project.
+	docker compose up -d
+	docker compose exec make-it-real uv run makeitreal "$(IDEA)"
+
 
 ##@ General
 
