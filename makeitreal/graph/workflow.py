@@ -8,6 +8,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
 from ..agents.idea_curator import IdeaCurator
+from ..agents.spec_writer import SpecWriter
 from .state import WorkflowState
 
 
@@ -18,6 +19,7 @@ class IdeationWorkflow:
         """Initialize the workflow with memory checkpointing."""
         self.checkpointer = MemorySaver()
         self.idea_curator = IdeaCurator()
+        self.spec_writer = SpecWriter()
         self.graph = self._build_graph()
 
     def _build_graph(self):
@@ -26,12 +28,25 @@ class IdeationWorkflow:
 
         # Add nodes
         workflow.add_node("idea_curator", self.idea_curator_node)
+        workflow.add_node("spec_writer", self.spec_writer_node)
 
-        # Define flow
+        # Define flow with conditional error handling
         workflow.add_edge(START, "idea_curator")
-        workflow.add_edge("idea_curator", END)
+        workflow.add_conditional_edges(
+            "idea_curator",
+            self._should_continue_after_curator,
+            {"continue": "spec_writer", "end": END},
+        )
+        workflow.add_edge("spec_writer", END)
 
         return workflow.compile(checkpointer=self.checkpointer)
+
+    def _should_continue_after_curator(self, state: WorkflowState) -> str:
+        """Determine if workflow should continue after idea curator."""
+        error = state.get("error", "")
+        if error and error.strip():
+            return "end"
+        return "continue"
 
     async def idea_curator_node(self, state: WorkflowState) -> dict[str, Any]:
         """Process idea with curator agent."""
@@ -44,6 +59,27 @@ class IdeationWorkflow:
             return {
                 "product_idea": result["curation_result"],
                 "current_phase": "curated",
+                "error": "",
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "current_phase": "error",
+            }
+
+    async def spec_writer_node(self, state: WorkflowState) -> dict[str, Any]:
+        """Generate technical specification from curated idea."""
+        try:
+            # Use curation result from previous agent
+            curation_result = state.get("product_idea", {})
+            if not curation_result:
+                raise ValueError("No curation result available from idea curator")
+
+            result = await self.spec_writer.process({"curation_result": curation_result})
+
+            return {
+                "technical_spec": result["technical_spec"],
+                "current_phase": "specified",
                 "error": "",
             }
         except Exception as e:
