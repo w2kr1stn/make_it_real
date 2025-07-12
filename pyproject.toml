@@ -36,6 +36,7 @@ format = "manage:format"
 test = "manage:test"
 aiask = "aiask.cli:app"
 makeitreal = "makeitreal.cli:app"
+makeitreal2 = "makeitreal.cli2:app"
 dump_graph = "makeitreal.dump_graph:app"
 
 [tool.hatch.build.targets.wheel]
