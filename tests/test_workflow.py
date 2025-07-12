@@ -47,9 +47,13 @@ async def test_workflow_run_success(workflow, mock_curation_result):
     """Test successful workflow execution."""
     workflow = workflow
 
-    # Mock the idea curator process method
-    with patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_process:
-        mock_process.return_value = {"curation_result": mock_curation_result}
+    # Mock both agents
+    with (
+        patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_curator,
+        patch.object(workflow.spec_writer, "process", new_callable=AsyncMock) as mock_spec_writer,
+    ):
+        mock_curator.return_value = {"curation_result": mock_curation_result}
+        mock_spec_writer.return_value = {"technical_spec": {"test": "spec"}}
 
         result = await workflow.run("A task management app for professionals")
 
@@ -57,8 +61,9 @@ async def test_workflow_run_success(workflow, mock_curation_result):
         assert isinstance(result, dict)
         assert "current_phase" in result
         assert "product_idea" in result
+        assert "technical_spec" in result
         assert "error" in result
-        assert result["current_phase"] == "curated"
+        assert result["current_phase"] == "specified"
         assert result["error"] == ""
         assert result["product_idea"] == mock_curation_result
 
@@ -69,8 +74,8 @@ async def test_workflow_run_with_error(workflow):
     workflow = workflow
 
     # Mock the idea curator to raise an exception
-    with patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_process:
-        mock_process.side_effect = Exception("Test error")
+    with patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_curator:
+        mock_curator.side_effect = Exception("Test error")
 
         result = await workflow.run("A task management app")
 
@@ -84,14 +89,18 @@ async def test_workflow_state_persistence(workflow, mock_curation_result):
     """Test that workflow state is persisted in memory."""
     thread_id = "test-thread-123"
 
-    with patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_process:
-        mock_process.return_value = {"curation_result": mock_curation_result}
+    with (
+        patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_curator,
+        patch.object(workflow.spec_writer, "process", new_callable=AsyncMock) as mock_spec_writer,
+    ):
+        mock_curator.return_value = {"curation_result": mock_curation_result}
+        mock_spec_writer.return_value = {"technical_spec": {"test": "spec"}}
 
         # Run workflow with specific thread_id
         result = await workflow.run("Test idea", thread_id=thread_id)
 
         # Verify that the result contains expected data
-        assert result["current_phase"] == "curated"
+        assert result["current_phase"] == "specified"
         assert result["product_idea"] == mock_curation_result
 
 

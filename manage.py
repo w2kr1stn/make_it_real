@@ -9,7 +9,7 @@ def format() -> None:
     """Run Ruff linting and formatting."""
     commands = [
         ["uv", "run", "ruff", "format", "."],
-        ["uv", "run", "ruff", "check", ".", "--fix"],
+        ["uv", "run", "ruff", "check", ".", "--fix", "--unsafe-fixes"],
         ["echo", "\n🟢 Linting → ✅ Code clean\n"],
     ]
     for cmd in commands:

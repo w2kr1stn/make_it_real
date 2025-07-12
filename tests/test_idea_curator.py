@@ -10,10 +10,10 @@ from makeitreal.models import CurationResult
 
 def test_idea_curator_initialization():
     """Test that IdeaCurator initializes correctly without API calls."""
-    with patch("makeitreal.agents.idea_curator.Settings") as mock_settings:
-        mock_settings.return_value.openai_api_key = "test-key"
-        mock_settings.return_value.openai_model = "gpt-4"
-        mock_settings.return_value.openai_base_url = "https://api.openai.com/v1"
+    with patch("makeitreal.agents.idea_curator.openai_settings") as mock_settings:
+        mock_settings.openai_api_key = "test-key"
+        mock_settings.openai_model = "gpt-4"
+        mock_settings.openai_base_url = "https://api.openai.com/v1"
 
         with (
             patch("makeitreal.agents.idea_curator.ChatOpenAI"),
@@ -80,10 +80,10 @@ def test_curation_result_model_validation_error():
 @pytest.mark.asyncio
 async def test_idea_curator_input_validation():
     """Test input validation without actual LLM calls."""
-    with patch("makeitreal.agents.idea_curator.Settings") as mock_settings:
-        mock_settings.return_value.openai_api_key = "test-key"
-        mock_settings.return_value.openai_model = "gpt-4"
-        mock_settings.return_value.openai_base_url = "https://api.openai.com/v1"
+    with patch("makeitreal.agents.idea_curator.openai_settings") as mock_settings:
+        mock_settings.openai_api_key = "test-key"
+        mock_settings.openai_model = "gpt-4"
+        mock_settings.openai_base_url = "https://api.openai.com/v1"
 
         with (
             patch("makeitreal.agents.idea_curator.ChatOpenAI"),
