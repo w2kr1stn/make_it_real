@@ -63,10 +63,37 @@ class IdeaCurator(BaseAgent):
         if not idea:
             raise ValueError("Input data must contain 'idea' key with product idea")
 
-        chain = self.prompt | self.llm | self.parser
+        # Create the chain without parser first for debugging
+        prompt_chain = self.prompt | self.llm
 
-        result = await chain.ainvoke(
+        # Get raw response
+        response = await prompt_chain.ainvoke(
             {"idea": idea, "format_instructions": self.parser.get_format_instructions()}
         )
 
-        return {"curation_result": result.model_dump()}
+        # Parse manually with error handling
+        try:
+            result = self.parser.parse(response.content)
+            return {"curation_result": result.model_dump()}
+        except Exception as e:
+            # Fallback: try to extract JSON manually
+            import json
+            import re
+
+            # Extract JSON from response content
+            content = response.content
+            json_match = re.search(r"\{.*\}", content, re.DOTALL)
+
+            if json_match:
+                try:
+                    json_data = json.loads(json_match.group())
+                    result = CurationResult(**json_data)
+                    return {"curation_result": result.model_dump()}
+                except Exception as parse_error:
+                    raise ValueError(
+                        f"Failed to parse response: {parse_error}. Raw content: {content[:500]}..."
+                    ) from parse_error
+
+            raise ValueError(
+                f"No valid JSON found in response. Original error: {e}. Content: {content[:500]}..."
+            ) from e
