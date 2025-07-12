@@ -34,16 +34,17 @@ def idea(
                 raise Exception(result["error"])
 
             curation = result["product_idea"]
+            technical_spec = result.get("technical_spec", {})
 
-        _display_structured_results(curation)
+        _display_structured_results(curation, technical_spec)
 
     except Exception as e:
         console.print(Panel(f"❌ Error: {str(e)}", title="Error", style="red"))
         raise typer.Exit(1) from e
 
 
-def _display_structured_results(curation: dict) -> None:
-    """Display structured curation results using Rich tables and panels."""
+def _display_structured_results(curation: dict, technical_spec: dict = None) -> None:
+    """Display structured curation results and technical specification using Rich."""
 
     console.print()
     # Product Idea Overview
@@ -128,6 +129,57 @@ def _display_structured_results(curation: dict) -> None:
             style="magenta",
         )
         console.print(steps_panel)
+
+    # Technical Specification (if available)
+    if technical_spec:
+        console.print()
+        console.print(Panel("📋 Technical Specification Generated", style="cyan"))
+
+        # Press Release
+        press_release = technical_spec.get("press_release", {})
+        if press_release.get("headline"):
+            pr_panel = Panel(
+                f"**{press_release.get('headline', 'N/A')}**\n\n"
+                f"{press_release.get('intro', 'N/A')}\n\n"
+                f"*Problem:* {press_release.get('problem', 'N/A')}\n"
+                f"*Solution:* {press_release.get('solution', 'N/A')}",
+                title="📰 Press Release Preview",
+                style="green",
+            )
+            console.print(pr_panel)
+            console.print()
+
+        # User Stories
+        user_stories = technical_spec.get("user_stories", [])
+        if user_stories:
+            stories_table = Table(title="📋 User Stories", show_header=True)
+            stories_table.add_column("Story", style="cyan")
+            stories_table.add_column("Priority", style="yellow")
+
+            for story in user_stories[:5]:  # Show first 5 stories
+                title = story.get("title", "N/A")
+                priority = story.get("priority", "medium")
+                stories_table.add_row(title, priority.upper())
+
+            console.print(stories_table)
+            console.print()
+
+        # Technical Requirements
+        tech_reqs = technical_spec.get("technical_requirements", [])
+        if tech_reqs:
+            tech_panel = Panel(
+                "\n".join([f"• {req}" for req in tech_reqs[:8]]),  # Show first 8
+                title="⚙️ Technical Requirements",
+                style="blue",
+            )
+            console.print(tech_panel)
+            console.print()
+
+        # Timeline
+        timeline = technical_spec.get("timeline", "")
+        if timeline:
+            timeline_panel = Panel(timeline, title="⏱️ Development Timeline", style="magenta")
+            console.print(timeline_panel)
 
 
 if __name__ == "__main__":
