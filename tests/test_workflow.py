@@ -31,7 +31,9 @@ def mock_curation_result():
 @pytest.fixture
 def workflow():
     """Create workflow with memory checkpointing."""
-    return IdeationWorkflow()
+    # Mock OpenAI API key for testing
+    with patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"}):
+        return IdeationWorkflow()
 
 
 def test_workflow_initialization(workflow):
@@ -39,6 +41,8 @@ def test_workflow_initialization(workflow):
 
     assert workflow.checkpointer is not None
     assert workflow.idea_curator is not None
+    assert workflow.spec_writer is not None
+    assert workflow.evaluator is not None
     assert workflow.graph is not None
 
 
@@ -47,13 +51,17 @@ async def test_workflow_run_success(workflow, mock_curation_result):
     """Test successful workflow execution."""
     workflow = workflow
 
-    # Mock both agents
+    # Mock all three agents
     with (
         patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_curator,
         patch.object(workflow.spec_writer, "process", new_callable=AsyncMock) as mock_spec_writer,
+        patch.object(workflow.evaluator, "process", new_callable=AsyncMock) as mock_evaluator,
     ):
         mock_curator.return_value = {"curation_result": mock_curation_result}
         mock_spec_writer.return_value = {"technical_spec": {"test": "spec"}}
+        mock_evaluator.return_value = {
+            "evaluation_results": {"go_no_go": "GO", "feasibility_score": 0.8}
+        }
 
         result = await workflow.run("A task management app for professionals")
 
@@ -62,8 +70,9 @@ async def test_workflow_run_success(workflow, mock_curation_result):
         assert "current_phase" in result
         assert "product_idea" in result
         assert "technical_spec" in result
+        assert "evaluation_results" in result
         assert "error" in result
-        assert result["current_phase"] == "specified"
+        assert result["current_phase"] == "evaluated"
         assert result["error"] == ""
         assert result["product_idea"] == mock_curation_result
 
@@ -92,15 +101,19 @@ async def test_workflow_state_persistence(workflow, mock_curation_result):
     with (
         patch.object(workflow.idea_curator, "process", new_callable=AsyncMock) as mock_curator,
         patch.object(workflow.spec_writer, "process", new_callable=AsyncMock) as mock_spec_writer,
+        patch.object(workflow.evaluator, "process", new_callable=AsyncMock) as mock_evaluator,
     ):
         mock_curator.return_value = {"curation_result": mock_curation_result}
         mock_spec_writer.return_value = {"technical_spec": {"test": "spec"}}
+        mock_evaluator.return_value = {
+            "evaluation_results": {"go_no_go": "GO", "feasibility_score": 0.8}
+        }
 
         # Run workflow with specific thread_id
         result = await workflow.run("Test idea", thread_id=thread_id)
 
         # Verify that the result contains expected data
-        assert result["current_phase"] == "specified"
+        assert result["current_phase"] == "evaluated"
         assert result["product_idea"] == mock_curation_result
 
 
