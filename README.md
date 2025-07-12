@@ -12,5 +12,39 @@ Similarly, copy `.mcp.env_example` to `.mcp.env` and replace `PAT` with your per
 
 To build and run containerized CLI:
 ```sh
-make compose-up IDEA='task management app for developers'
+make run IDEA='task management app for developers'
+```
+
+## Graph
+
+To dump the LangGraph mermaid, run:
+```sh
+make dump-graph
+```
+
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	idea_curator(idea_curator)
+	spec_writer(spec_writer)
+	evaluator(evaluator)
+	human_review(human_review<hr/><small><em>__interrupt = before</em></small>)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> idea_curator;
+	evaluator -. &nbsp;end&nbsp; .-> __end__;
+	evaluator -. &nbsp;continue&nbsp; .-> human_review;
+	human_review -. &nbsp;continue&nbsp; .-> __end__;
+	human_review -. &nbsp;revise&nbsp; .-> spec_writer;
+	idea_curator -. &nbsp;end&nbsp; .-> __end__;
+	idea_curator -. &nbsp;continue&nbsp; .-> spec_writer;
+	spec_writer -. &nbsp;end&nbsp; .-> __end__;
+	spec_writer -. &nbsp;continue&nbsp; .-> evaluator;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
 ```
