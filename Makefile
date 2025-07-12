@@ -10,7 +10,7 @@ container: ## Build container image.
 
 run: IDEA?=task management app for developers
 run: container ## Run container.
-	docker run --rm -ti --env-file=.env $(IMAGE) "$(IDEA)"
+	docker run --rm -ti --network=host --env-file=.env $(IMAGE) "$(IDEA)"
 
 ##@ General
 
