@@ -65,5 +65,26 @@ class TechnicalSpec(BaseModel):
     sections: list[PRDSection] = Field(default=[], description="Additional PRD sections")
 
 
+class EvaluationResult(BaseModel):
+    """Complete evaluation output from the Evaluator agent."""
+
+    feasibility_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Technical feasibility score (0.0-1.0)"
+    )
+    resource_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Resource availability score (0.0-1.0)"
+    )
+    timeline_score: float = Field(
+        ..., ge=0.0, le=1.0, description="Timeline realism score (0.0-1.0)"
+    )
+    risk_assessment: str = Field(..., description="Overall risk assessment summary")
+    recommendations: list[str] = Field(
+        ..., description="Actionable recommendations for implementation"
+    )
+    go_no_go: str = Field(
+        ..., pattern="^(GO|NO_GO)$", description="Final recommendation: GO or NO_GO"
+    )
+
+
 # Enable forward references for recursive PRDSection model
 PRDSection.model_rebuild()
