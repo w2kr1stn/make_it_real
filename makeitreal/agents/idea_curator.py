@@ -5,21 +5,10 @@ from typing import Any
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from pydantic_settings import BaseSettings
 
+from ..config import openai_settings
 from ..models import CurationResult
 from .base import BaseAgent
-
-
-class Settings(BaseSettings):
-    """Configuration settings for the Idea Curator agent."""
-
-    openai_api_key: str
-    openai_model: str = "gpt-4o-mini"
-    openai_base_url: str = "https://api.openai.com/v1"
-
-    class Config:
-        env_file = ".env"
 
 
 class IdeaCurator(BaseAgent):
@@ -29,11 +18,10 @@ class IdeaCurator(BaseAgent):
         """Initialize the Idea Curator agent."""
         super().__init__("Idea Curator")
 
-        self.settings = Settings()
         self.llm = ChatOpenAI(
-            model=self.settings.openai_model,
-            api_key=self.settings.openai_api_key,
-            base_url=self.settings.openai_base_url,
+            model=openai_settings.openai_model,
+            api_key=openai_settings.openai_api_key,
+            base_url=openai_settings.openai_base_url,
         )
 
         self.parser = PydanticOutputParser(pydantic_object=CurationResult)
