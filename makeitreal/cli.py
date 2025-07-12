@@ -5,6 +5,7 @@ import asyncio
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 from .graph import IdeationWorkflow
@@ -26,21 +27,139 @@ def idea(
     console.print(Panel("🧠 Analyzing your product idea...", style="blue"))
 
     try:
+        workflow = IdeationWorkflow()
+        thread_id = "cli_session"  # Use consistent thread_id for checkpointing
+
         with console.status("[green]Workflow processing...", spinner="dots"):
-            workflow = IdeationWorkflow()
-            result = asyncio.run(workflow.run(description))
+            result = asyncio.run(workflow.run(description, thread_id))
 
-            if result.get("error"):
-                raise Exception(result["error"])
+        # Check if workflow was interrupted for human review
+        # LangGraph interrupts return the current state before the interrupt node
+        if result.get("technical_spec") and result.get("current_phase") == "specified":
+            console.print()
+            console.print(
+                Panel(
+                    "🔍 Technical specification generated!\n"
+                    "The workflow is paused for your review.",
+                    title="Human Review Required",
+                    style="yellow",
+                )
+            )
 
-            curation = result["product_idea"]
-            technical_spec = result.get("technical_spec", {})
+            result = _handle_human_review(workflow, result, thread_id)
+
+        # Handle rejection case
+        if result.get("current_phase") == "rejected":
+            console.print()
+            console.print(
+                Panel(
+                    "The workflow was terminated because the specification was rejected.\n"
+                    "You can run the command again to generate a new specification.",
+                    title="Workflow Terminated",
+                    style="red",
+                )
+            )
+            return
+
+        if result.get("error"):
+            raise Exception(result["error"])
+
+        curation = result["product_idea"]
+        technical_spec = result.get("technical_spec", {})
 
         _display_structured_results(curation, technical_spec)
 
     except Exception as e:
         console.print(Panel(f"❌ Error: {str(e)}", title="Error", style="red"))
         raise typer.Exit(1) from e
+
+
+def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, thread_id: str) -> dict:
+    """Handle human review workflow interruption."""
+
+    # Display current technical spec for review
+    technical_spec = current_result.get("technical_spec", {})
+    if technical_spec:
+        _display_review_summary(technical_spec)
+
+    console.print()
+
+    # Get user decision
+    while True:
+        choice = (
+            Prompt.ask("How would you like to proceed? (approve/changes/reject)", default="approve")
+            .lower()
+            .strip()
+        )
+
+        if choice in ["approve", "a", "1"]:
+            decision = {"action": "approve"}
+            break
+        elif choice in ["request_changes", "changes", "change", "c", "2"]:
+            feedback = Prompt.ask("What changes would you like to request?")
+            decision = {"action": "request_changes", "feedback": feedback}
+            break
+        elif choice in ["reject", "r", "3"]:
+            if Confirm.ask("Are you sure you want to reject this specification?"):
+                decision = {"action": "reject"}
+                break
+            # Continue loop if user cancels rejection
+        else:
+            console.print("❌ Invalid choice. Please enter: approve, changes, or reject")
+
+    # Resume workflow with user decision
+    config = {"configurable": {"thread_id": thread_id}}
+
+    try:
+        console.print()
+
+        # Handle rejection immediately without resuming workflow
+        if decision.get("action") == "reject":
+            console.print("❌ Specification rejected. Workflow terminated.")
+            return {
+                **current_result,
+                "current_phase": "rejected",
+                "error": "Technical specification rejected by user",
+            }
+
+        with console.status("[green]Processing your decision...", spinner="dots"):
+            # Resume workflow by providing the interrupt response
+            final_result = asyncio.run(workflow.graph.ainvoke(decision, config))
+
+        return final_result
+
+    except Exception as e:
+        console.print(Panel(f"❌ Error resuming workflow: {str(e)}", style="red"))
+        return current_result
+
+
+def _display_review_summary(technical_spec: dict) -> None:
+    """Display a summary of the technical specification for review."""
+
+    # Press Release
+    press_release = technical_spec.get("press_release", {})
+    if press_release.get("headline"):
+        console.print(
+            Panel(
+                f"**{press_release.get('headline', 'N/A')}**\n\n"
+                f"{press_release.get('intro', 'N/A')[:150]}...",
+                title="📰 Press Release Preview",
+                style="blue",
+            )
+        )
+
+    # Quick stats
+    user_stories = technical_spec.get("user_stories", [])
+    tech_reqs = technical_spec.get("technical_requirements", [])
+
+    stats_table = Table(title="📊 Specification Overview", show_header=False)
+    stats_table.add_column("Metric", style="cyan")
+    stats_table.add_column("Count", style="yellow")
+
+    stats_table.add_row("User Stories", str(len(user_stories)))
+    stats_table.add_row("Technical Requirements", str(len(tech_reqs)))
+
+    console.print(stats_table)
 
 
 def _display_structured_results(curation: dict, technical_spec: dict = None) -> None:
