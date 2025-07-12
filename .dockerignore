@@ -2,4 +2,5 @@
 .env
 .venv
 Makefile
-
+__pycache__/
+*.pyc
