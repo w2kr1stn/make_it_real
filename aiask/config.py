@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     openai_api_key: str
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-4.1-nano-2025-04-14"
     openai_base_url: str = "https://api.openai.com/v1"
 
     class Config:
