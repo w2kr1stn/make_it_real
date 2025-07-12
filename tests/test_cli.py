@@ -47,7 +47,7 @@ def test_idea_command_success(mock_workflow_class):
 
     assert result.exit_code == 0
     assert "Product Concept" in result.stdout
-    mock_workflow.run.assert_called_once_with("test task management app")
+    mock_workflow.run.assert_called_once_with("test task management app", "cli_session")
 
 
 @patch("makeitreal.cli.IdeationWorkflow")
