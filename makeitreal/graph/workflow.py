@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 
 from ..agents.idea_curator import IdeaCurator
 from ..agents.spec_writer import SpecWriter
+from .human_review import human_review_node
 from .state import WorkflowState
 
 
@@ -29,6 +30,7 @@ class IdeationWorkflow:
         # Add nodes
         workflow.add_node("idea_curator", self.idea_curator_node)
         workflow.add_node("spec_writer", self.spec_writer_node)
+        workflow.add_node("human_review", human_review_node)
 
         # Define flow with conditional error handling
         workflow.add_edge(START, "idea_curator")
@@ -37,9 +39,14 @@ class IdeationWorkflow:
             self._should_continue_after_curator,
             {"continue": "spec_writer", "end": END},
         )
-        workflow.add_edge("spec_writer", END)
+        workflow.add_edge("spec_writer", "human_review")
+        workflow.add_conditional_edges(
+            "human_review",
+            self._should_continue_after_review,
+            {"continue": END, "revise": "spec_writer", "end": END},
+        )
 
-        return workflow.compile(checkpointer=self.checkpointer)
+        return workflow.compile(checkpointer=self.checkpointer, interrupt_before=["human_review"])
 
     def _should_continue_after_curator(self, state: WorkflowState) -> str:
         """Determine if workflow should continue after idea curator."""
@@ -47,6 +54,17 @@ class IdeationWorkflow:
         if error and error.strip():
             return "end"
         return "continue"
+
+    def _should_continue_after_review(self, state: WorkflowState) -> str:
+        """Determine workflow direction after human review."""
+        current_phase = state.get("current_phase", "")
+
+        if current_phase == "approved":
+            return "continue"
+        elif current_phase == "revision_requested":
+            return "revise"
+        else:  # rejected or error
+            return "end"
 
     async def idea_curator_node(self, state: WorkflowState) -> dict[str, Any]:
         """Process idea with curator agent."""
