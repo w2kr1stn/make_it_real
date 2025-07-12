@@ -2,7 +2,6 @@
 
 from typing import Any
 
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
@@ -23,8 +22,9 @@ class IdeaCurator(BaseAgent):
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
         )
-
-        self.parser = PydanticOutputParser(pydantic_object=CurationResult)
+        self.structured_llm = self.llm.with_structured_output(
+            CurationResult, method="function_calling"
+        )
 
         self.prompt = ChatPromptTemplate.from_messages(
             [
@@ -42,9 +42,7 @@ class IdeaCurator(BaseAgent):
             6. **Next Steps**: Provide actionable validation steps
 
             Be specific, actionable, and realistic in your analysis. Focus on creating
-            a solid foundation for product development.
-
-            {format_instructions}""",
+            a solid foundation for product development.""",
                 ),
                 ("human", "Product Idea: {idea}"),
             ]
@@ -63,37 +61,7 @@ class IdeaCurator(BaseAgent):
         if not idea:
             raise ValueError("Input data must contain 'idea' key with product idea")
 
-        # Create the chain without parser first for debugging
-        prompt_chain = self.prompt | self.llm
+        chain = self.prompt | self.structured_llm
+        result = await chain.ainvoke({"idea": idea})
 
-        # Get raw response
-        response = await prompt_chain.ainvoke(
-            {"idea": idea, "format_instructions": self.parser.get_format_instructions()}
-        )
-
-        # Parse manually with error handling
-        try:
-            result = self.parser.parse(response.content)
-            return {"curation_result": result.model_dump()}
-        except Exception as e:
-            # Fallback: try to extract JSON manually
-            import json
-            import re
-
-            # Extract JSON from response content
-            content = response.content
-            json_match = re.search(r"\{.*\}", content, re.DOTALL)
-
-            if json_match:
-                try:
-                    json_data = json.loads(json_match.group())
-                    result = CurationResult(**json_data)
-                    return {"curation_result": result.model_dump()}
-                except Exception as parse_error:
-                    raise ValueError(
-                        f"Failed to parse response: {parse_error}. Raw content: {content[:500]}..."
-                    ) from parse_error
-
-            raise ValueError(
-                f"No valid JSON found in response. Original error: {e}. Content: {content[:500]}..."
-            ) from e
+        return {"curation_result": result.model_dump()}

@@ -12,11 +12,18 @@ class ProductIdea(BaseModel):
     value_proposition: str = Field(..., description="Core value delivered to users")
 
 
+class Competitor(BaseModel):
+    """Information about a competitor."""
+
+    name: str = Field(..., description="Competitor name")
+    description: str = Field(..., description="Brief description of the competitor")
+
+
 class MarketAnalysis(BaseModel):
     """Market research and competitive analysis."""
 
     market_size: str = Field(..., description="Assessment of total addressable market")
-    competitors: list[dict[str, str]] = Field(
+    competitors: list[Competitor] = Field(
         ..., description="Key competitors with name and description"
     )
     opportunities: list[str] = Field(..., description="Market opportunities identified")
@@ -42,27 +49,39 @@ class UserStory(BaseModel):
     acceptance_criteria: list[str] = Field(..., description="Testable acceptance criteria")
     definition_of_done: list[str] = Field(..., description="Definition of done checklist")
     priority: str = Field(..., description="Priority level: high, medium, low")
-    estimate: str = Field(default="", description="Story point estimate or effort estimation")
+    estimate: str = Field(default="TBD", description="Story point estimate or effort estimation")
 
 
-class PRDSection(BaseModel):
-    """Individual section of a Product Requirements Document."""
+class PressRelease(BaseModel):
+    """Press release section of technical spec."""
 
-    title: str = Field(..., description="Section title")
-    content: str = Field(..., description="Section content")
-    subsections: list["PRDSection"] = Field(default=[], description="Nested subsections")
+    headline: str = Field(..., description="Press release headline")
+    subtitle: str = Field(..., description="Press release subtitle")
+    intro: str = Field(..., description="Introduction paragraph")
+    problem: str = Field(..., description="Problem statement")
+    solution: str = Field(..., description="Solution description")
+    leader_quote: str = Field(..., description="Quote from company leader")
+    how_it_works: str = Field(..., description="How the product works")
+    customer_quote: str = Field(..., description="Quote from a customer")
+    call_to_action: str = Field(..., description="Call to action")
+
+
+class FAQ(BaseModel):
+    """FAQ section of technical spec."""
+
+    internal: list[str] = Field(..., description="Internal Q&A pairs")
+    customer: list[str] = Field(..., description="Customer Q&A pairs")
 
 
 class TechnicalSpec(BaseModel):
     """Complete technical specification generated from curated idea."""
 
-    press_release: dict[str, str] = Field(..., description="Amazon Working Backwards press release")
-    faq: dict[str, list[str]] = Field(..., description="Internal and customer FAQs")
+    press_release: PressRelease = Field(..., description="Amazon Working Backwards press release")
+    faq: FAQ = Field(..., description="Internal and customer FAQs")
     user_stories: list[UserStory] = Field(..., description="INVEST-compliant user stories")
     technical_requirements: list[str] = Field(..., description="Core technical requirements")
     success_metrics: list[str] = Field(..., description="Key success metrics and KPIs")
     timeline: str = Field(..., description="Estimated development timeline")
-    sections: list[PRDSection] = Field(default=[], description="Additional PRD sections")
 
 
 class EvaluationResult(BaseModel):
@@ -84,7 +103,3 @@ class EvaluationResult(BaseModel):
     go_no_go: str = Field(
         ..., pattern="^(GO|NO_GO)$", description="Final recommendation: GO or NO_GO"
     )
-
-
-# Enable forward references for recursive PRDSection model
-PRDSection.model_rebuild()

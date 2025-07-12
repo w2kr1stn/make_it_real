@@ -1,14 +1,13 @@
+# ruff: noqa: E501
 """Spec Writer agent for generating technical specifications from curated ideas."""
 
 from typing import Any
 
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from ..config import openai_settings
 from ..models import TechnicalSpec
-from ..templates import PRDTemplate
 from .base import BaseAgent
 
 
@@ -24,52 +23,30 @@ class SpecWriter(BaseAgent):
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
         )
-
-        self.template = PRDTemplate()
-        self.parser = PydanticOutputParser(pydantic_object=TechnicalSpec)
+        self.structured_llm = self.llm.with_structured_output(
+            TechnicalSpec, method="function_calling"
+        )
 
         self.prompt = ChatPromptTemplate.from_messages(
             [
                 (
                     "system",
-                    """You are a senior technical product manager and specification expert.
+                    """You are a senior technical product manager.
 
-Transform the curated product idea into a comprehensive technical specification
-following Amazon's Working Backwards methodology.
+Transform the curated product idea into a technical specification.
 
-Use this PRD template structure:
-{template}
+Curated idea:
+{curation_summary}
 
-Based on the curated idea analysis:
-- Product Idea: {product_idea}
-- Market Analysis: {market_analysis}
-- Recommended Features: {recommended_features}
-- Next Steps: {next_steps}
+You MUST generate a TechnicalSpec object with these EXACT fields in this order:
+- press_release (dict): Contains headline, subtitle, intro, problem, solution, leader_quote, how_it_works, customer_quote, call_to_action
+- faq (dict): Contains internal (list of strings) and customer (list of strings)
+- user_stories (list): Each story has title, description, acceptance_criteria, definition_of_done, priority, estimate
+- technical_requirements (list of strings)
+- success_metrics (list of strings)
+- timeline (string)
 
-Generate a complete PRD that includes:
-
-1. **Press Release**: Write as if the product already launched successfully
-   - Compelling headline and subtitle
-   - Clear problem and solution statements
-   - Engaging leader and customer quotes
-   - Specific call to action
-
-2. **FAQ**: Address both internal (technical, business) and customer questions
-
-3. **User Stories**: Create INVEST-compliant user stories for key features
-   - Format: "As a [user type], I want [capability] so that [benefit]"
-   - Include acceptance criteria and definition of done
-
-4. **Technical Requirements**: List core technical features and capabilities
-
-5. **Success Metrics**: Define measurable KPIs and success criteria
-
-6. **Timeline**: Provide realistic development phases and timeline
-
-Be specific, actionable, and realistic. Focus on solving real user problems
-with a clear value proposition.
-
-{format_instructions}""",
+ALL fields are required. Generate complete content for each field.""",
                 ),
                 (
                     "human",
@@ -91,23 +68,8 @@ with a clear value proposition.
         if not curation_result:
             raise ValueError("Input data must contain 'curation_result' from IdeaCurator")
 
-        # Extract components from curation result
-        product_idea = curation_result.get("product_idea", {})
-        market_analysis = curation_result.get("market_analysis", {})
-        recommended_features = curation_result.get("recommended_features", [])
-        next_steps = curation_result.get("next_steps", [])
+        chain = self.prompt | self.structured_llm
 
-        chain = self.prompt | self.llm | self.parser
-
-        result = await chain.ainvoke(
-            {
-                "template": self.template.get_template(),
-                "product_idea": product_idea,
-                "market_analysis": market_analysis,
-                "recommended_features": recommended_features,
-                "next_steps": next_steps,
-                "format_instructions": self.parser.get_format_instructions(),
-            }
-        )
+        result = await chain.ainvoke({"curation_summary": str(curation_result)})
 
         return {"technical_spec": result.model_dump()}

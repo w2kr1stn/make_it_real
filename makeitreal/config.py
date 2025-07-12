@@ -10,7 +10,7 @@ class OpenAISettings(BaseSettings):
     model_config = ConfigDict(env_file=".env", extra="ignore")
 
     openai_api_key: str
-    openai_model: str = "gpt-4o-mini"
+    openai_model: str = "gpt-4.1-nano-2025-04-14"
     openai_base_url: str = "https://api.openai.com/v1"
 
 

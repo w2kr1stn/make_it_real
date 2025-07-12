@@ -1,11 +1,11 @@
 """Evaluator agent for feasibility assessment and risk analysis."""
 
-import json
-import re
 from typing import Any
 
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
+from ..config import openai_settings
 from ..models import EvaluationResult
 from .base import BaseAgent
 
@@ -16,7 +16,14 @@ class Evaluator(BaseAgent):
     def __init__(self) -> None:
         """Initialize the Evaluator agent."""
         super().__init__("Evaluator")
-        self.llm = ChatOpenAI(model="gpt-4")
+        self.llm = ChatOpenAI(
+            model=openai_settings.openai_model,
+            api_key=openai_settings.openai_api_key,
+            base_url=openai_settings.openai_base_url,
+        )
+        self.structured_llm = self.llm.with_structured_output(
+            EvaluationResult, method="function_calling"
+        )
 
     async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
         """Evaluate technical specification for feasibility and implementation risk.
@@ -32,22 +39,24 @@ class Evaluator(BaseAgent):
         if not technical_spec:
             raise ValueError("No technical specification provided for evaluation")
 
-        evaluation_prompt = self._build_evaluation_prompt(technical_spec)
-        response = await self.llm.ainvoke(evaluation_prompt)
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", self._build_evaluation_prompt()),
+                ("human", "Technical Specification to evaluate: {spec}"),
+            ]
+        )
 
-        evaluation_result = self._parse_evaluation_response(response.content)
+        chain = prompt | self.structured_llm
+        result = await chain.ainvoke({"spec": str(technical_spec)})
 
-        return {"evaluation_results": evaluation_result.model_dump()}
+        return {"evaluation_results": result.model_dump()}
 
-    def _build_evaluation_prompt(self, technical_spec: dict[str, Any]) -> str:
+    def _build_evaluation_prompt(self) -> str:
         """Build comprehensive evaluation prompt for the LLM."""
-        return f"""
+        return """
 You are a senior technical evaluator with expertise in software development and product management.
 
-Evaluate this technical specification for a new product:
-
-TECHNICAL SPECIFICATION:
-{json.dumps(technical_spec, indent=2)}
+Evaluate the provided technical specification for a new product.
 
 Provide a comprehensive evaluation addressing:
 
@@ -86,52 +95,5 @@ Provide a comprehensive evaluation addressing:
    - Key decision factors
    - Conditions for success
 
-RESPONSE FORMAT (JSON):
-{{
-    "feasibility_score": 0.85,
-    "resource_score": 0.75,
-    "timeline_score": 0.90,
-    "risk_assessment": "Medium risk with manageable technical challenges...",
-    "recommendations": ["Start with core MVP features", "Implement robust testing early", "..."],
-    "go_no_go": "GO"
-}}
-
-Provide only the JSON response with realistic scores and detailed analysis.
+Be thorough, realistic, and specific in your evaluation.
 """
-
-    def _parse_evaluation_response(self, response_content: str) -> EvaluationResult:
-        """Parse LLM response into structured EvaluationResult."""
-        try:
-            # Extract JSON from response
-            json_match = re.search(r"\{.*\}", response_content, re.DOTALL)
-            if not json_match:
-                raise ValueError("No JSON found in evaluation response")
-
-            json_str = json_match.group()
-            evaluation_data = json.loads(json_str)
-
-            # Validate and create EvaluationResult
-            evaluation_result = EvaluationResult(**evaluation_data)
-            return evaluation_result
-
-        except (json.JSONDecodeError, ValueError) as e:
-            # Fallback parsing for non-JSON responses
-            return self._fallback_parse_evaluation(response_content, str(e))
-
-    def _fallback_parse_evaluation(self, response_content: str, error_msg: str) -> EvaluationResult:
-        """Fallback parsing when JSON extraction fails."""
-        # Simple fallback with conservative scores
-        return EvaluationResult(
-            feasibility_score=0.7,
-            resource_score=0.6,
-            timeline_score=0.7,
-            risk_assessment=(
-                f"Evaluation parsing failed: {error_msg}. Conservative assessment applied."
-            ),
-            recommendations=[
-                "Review technical specification completeness",
-                "Conduct detailed technical analysis",
-                "Validate resource requirements",
-            ],
-            go_no_go="GO",
-        )
