@@ -1,4 +1,4 @@
-"""Tests for the CLI module with IdeaCurator agent."""
+"""Tests for the CLI module with IdeationWorkflow."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -13,15 +13,17 @@ def test_cli_app_exists():
     assert hasattr(app, "command")
 
 
-@patch("makeitreal.cli.IdeaCurator")
-def test_idea_command_success(mock_curator_class):
-    """Test successful idea command execution with IdeaCurator."""
+@patch("makeitreal.cli.IdeationWorkflow")
+def test_idea_command_success(mock_workflow_class):
+    """Test successful idea command execution with IdeationWorkflow."""
     # Create mock instance and result
-    mock_curator = AsyncMock()
-    mock_curator_class.return_value = mock_curator
+    mock_workflow = AsyncMock()
+    mock_workflow_class.return_value = mock_workflow
 
     mock_result = {
-        "curation_result": {
+        "current_phase": "curated",
+        "error": "",
+        "product_idea": {
             "product_idea": {
                 "raw_idea": "test task management app",
                 "problem_statement": "Teams need better task coordination",
@@ -36,26 +38,28 @@ def test_idea_command_success(mock_curator_class):
             },
             "recommended_features": ["Real-time sync", "Mobile app"],
             "next_steps": ["User interviews", "MVP wireframes"],
-        }
+        },
     }
-    mock_curator.process.return_value = mock_result
+    mock_workflow.run.return_value = mock_result
 
     runner = CliRunner()
     result = runner.invoke(app, ["test task management app"])
 
     assert result.exit_code == 0
     assert "Product Concept" in result.stdout
-    mock_curator.process.assert_called_once_with({"idea": "test task management app"})
+    mock_workflow.run.assert_called_once_with("test task management app")
 
 
-@patch("makeitreal.cli.IdeaCurator")
-def test_idea_command_with_verbose(mock_curator_class):
+@patch("makeitreal.cli.IdeationWorkflow")
+def test_idea_command_with_verbose(mock_workflow_class):
     """Test idea command with verbose flag."""
-    mock_curator = AsyncMock()
-    mock_curator_class.return_value = mock_curator
+    mock_workflow = AsyncMock()
+    mock_workflow_class.return_value = mock_workflow
 
     mock_result = {
-        "curation_result": {
+        "current_phase": "curated",
+        "error": "",
+        "product_idea": {
             "product_idea": {
                 "raw_idea": "test app",
                 "problem_statement": "Test problem",
@@ -70,9 +74,9 @@ def test_idea_command_with_verbose(mock_curator_class):
             },
             "recommended_features": ["Test feature"],
             "next_steps": ["Test step"],
-        }
+        },
     }
-    mock_curator.process.return_value = mock_result
+    mock_workflow.run.return_value = mock_result
 
     runner = CliRunner()
     result = runner.invoke(app, ["test app", "--verbose"])
@@ -81,12 +85,15 @@ def test_idea_command_with_verbose(mock_curator_class):
     assert "Processing idea:" in result.stdout
 
 
-@patch("makeitreal.cli.IdeaCurator")
-def test_idea_command_error_handling(mock_curator_class):
+@patch("makeitreal.cli.IdeationWorkflow")
+def test_idea_command_error_handling(mock_workflow_class):
     """Test error handling in idea command."""
-    mock_curator = AsyncMock()
-    mock_curator_class.return_value = mock_curator
-    mock_curator.process.side_effect = Exception("API Error")
+    mock_workflow = AsyncMock()
+    mock_workflow_class.return_value = mock_workflow
+
+    # Test with error in result
+    mock_result = {"current_phase": "error", "error": "API Error", "product_idea": {}}
+    mock_workflow.run.return_value = mock_result
 
     runner = CliRunner()
     result = runner.invoke(app, ["test app"])
