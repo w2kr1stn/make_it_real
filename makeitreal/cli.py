@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .agents import IdeaCurator
+from .graph import IdeationWorkflow
 
 app = typer.Typer(help="Transform ideas into structured product concepts")
 console = Console()
@@ -26,10 +26,14 @@ def idea(
     console.print(Panel("🧠 Analyzing your product idea...", style="blue"))
 
     try:
-        with console.status("[green]Agent analyzing...", spinner="dots"):
-            curator = IdeaCurator()
-            result = asyncio.run(curator.process({"idea": description}))
-            curation = result["curation_result"]
+        with console.status("[green]Workflow processing...", spinner="dots"):
+            workflow = IdeationWorkflow()
+            result = asyncio.run(workflow.run(description))
+
+            if result.get("error"):
+                raise Exception(result["error"])
+
+            curation = result["product_idea"]
 
         _display_structured_results(curation)
 
@@ -41,6 +45,7 @@ def idea(
 def _display_structured_results(curation: dict) -> None:
     """Display structured curation results using Rich tables and panels."""
 
+    console.print()
     # Product Idea Overview
     idea_table = Table(title="📝 Product Concept", show_header=False)
     idea_table.add_column("Field", style="cyan", width=20)
