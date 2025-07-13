@@ -21,7 +21,6 @@ def idea(
 ) -> None:
     """Analyze and structure a product idea using the IdeaCurator agent."""
 
-    print("foo")
     if verbose:
         console.print("[dim]Processing idea: {description}[/dim]")
 

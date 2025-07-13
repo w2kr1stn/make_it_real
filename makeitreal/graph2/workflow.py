@@ -8,11 +8,8 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 
-from ..agents.evaluator import Evaluator
-from ..agents.idea_curator import IdeaCurator
-from ..agents.spec_writer import SpecWriter
 from .human_review import human_review_node,human_review_features_node,human_review_techstack_node
-from .state import WorkflowState
+from .state import WorkflowState, Proposal
 
 
 class IdeationWorkflow:
@@ -21,107 +18,89 @@ class IdeationWorkflow:
     def __init__(self):
         """Initialize the workflow with memory checkpointing."""
         self.checkpointer = MemorySaver()
-        self.idea_curator = IdeaCurator()
         self.graph = self._build_graph()
 
     def _build_graph(self):
         """Build the LangGraph workflow."""
         workflow = StateGraph(WorkflowState)
 
-        # Add nodes
-        workflow.add_node("requirements_agent", self.idea_curator_node)
-        #TODO:add agent
-        workflow.add_node("requirements_review", self.requirements_review_node)
-        workflow.add_node("human_review_features", human_review_features_node)
-        workflow.add_node("human_review_techStack", human_review_techstack_node)
+        workflow.add_node("requirement_analysis", self._build_proposal_graph("features"))
+        workflow.add_node("techstack_discovery", self._build_proposal_graph("techStack"))
+        workflow.add_node("task_creation", self._build_proposal_graph("tasks"))
+        workflow.add_node("log_tasks", self._log_tasks)
 
-        # Define flow with conditional error handling
+        workflow.add_edge(START, "requirement_analysis")
+        workflow.add_edge("requirement_analysis", "techstack_discovery")
+        workflow.add_edge("techstack_discovery", "task_creation")
+        workflow.add_edge("task_creation", "log_tasks")
+        workflow.add_edge("log_tasks", END)
+
+        return workflow.compile(checkpointer=self.checkpointer)
+
+    def _build_proposal_graph(self, key: str):
+        """Build a LangGraph sub graph of the workflow."""
+        workflow = StateGraph(WorkflowState)
+
+        workflow.add_node("requirements_agent", lambda state: self._requirement_analysis(state, key))
+        workflow.add_node("review_agent", lambda state: self._agent_review(state, key))
+        workflow.add_node("human_review", lambda state: self._human_review(state, key))
+
         workflow.add_edge(START, "requirements_agent")
+        workflow.add_edge("requirements_agent", "review_agent")
         workflow.add_conditional_edges(
-            "requirements_agent",
-            self._should_continue_after_curator,
-            {"review":"requirements_review" ,
-             "end": END},
+            "review_agent",
+            lambda state: state.get(key).agentApproved and "approved" or "rejected",
+            {"approved": "human_review" ,
+             "rejected": "requirements_agent"},
+        )
+        workflow.add_conditional_edges(
+            "human_review",
+            lambda state: state.get(key).humanApproved and "approved" or "rejected",
+            {"approved": END,
+             "rejected": "requirements_agent"},
         )
 
-        workflow.add_conditional_edges(
-            "requirements_review",
-            self._should_continue_after_requirements_review,
-            {"review":"human_review_features" ,
-             "change": "requirements_agent",
-             "end": END},
-        )
+        return workflow.compile(checkpointer=self.checkpointer)
 
-        return workflow.compile(checkpointer=self.checkpointer) #
+    def _requirement_analysis(self, state: WorkflowState, key: str) -> dict[str, Any]:
+        print(f"{key} requirement analysis")
+        proposal = state.get(key)
+        proposal.proposedItems = proposal.proposedItems or [
+            f"{key} item 1",
+            f"{key} item 2",
+            f"{key} item 3",
+            f"{key} item 4",
+            f"{key} item 5",
+        ]
+        proposal.changeRequest = None
 
-    def _should_continue_after_curator(self, state: WorkflowState) -> str:
-        """Determine if workflow should continue after idea curator."""
-        error = state.get("error", "")
-        print("should continue after curator")
-        if error and error.strip():
-            return "end"
-        return "review"
+        return {
+            key: proposal,
+        }
 
-    def _should_continue_after_requirements_review(self, state: WorkflowState) -> str:
-        """Determine if workflow should continue after the requirements are reviewed."""
-        error = state.get("error", "")
-        changeRequest = state.get("changeRequest")
-        print("should continue after review: "+changeRequest)
-        if error and error.strip():
-            return "end"
+    def _agent_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
+        print(f"{key} review by agent")
+        proposal = state.get(key)
+        proposal.agentApproved = proposal.agentApproved or randint(1,2) > 1
+        proposal.changeRequest = "Add the missing feature xy"
 
-        if changeRequest:
-            return "change"
+        return {
+            key: proposal,
+        }
 
-        return "review"
+    def _human_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
+        print(f"{key} review by human")
+        proposal = state.get(key)
+        proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
+        proposal.changeRequest = "Please remove feature xy"
 
-    async def idea_curator_node(self, state: WorkflowState) -> dict[str, Any]:
-        """Process idea with curator agent."""
-        try:
-            # Extract idea from the last message
-            # idea = state["idea"]
+        return {
+            key: proposal,
+        }
 
-            # result = await self.idea_curator.process(state)
-
-            return {
-                "features": [
-                    "Feature 1",
-                    "Feature 2",
-                    "Feature 3",
-                    "Feature 4",
-                    "Feature 5",
-                ],
-                "error": "",
-            }
-        except Exception as e:
-            return {
-                "error": str(e),
-                "current_phase": "error",
-            }
-
-
-    async def requirements_review_node(self, state: WorkflowState) -> dict[str, Any]:
-        """Process idea with curator agent."""
-        try:
-
-            print("reuirements_review_node")
-            app = True
-            cr = ""
-            if randint(1,100) > 50:
-                app = False
-                cr = "change me"
-
-            return {
-                "changeRequest": cr,
-                "featureListApproved" : app,
-                "error": "",
-            }
-
-        except Exception as e:
-            return {
-                "error": str(e),
-                "current_phase": "error",
-            }
+    def _log_tasks(self, state: WorkflowState) -> dict[str, Any]:
+        print("TASKS:\n* "+('\n* '.join(state.get('tasks').proposedItems)))
+        return {}
 
     async def run(self, idea: str, thread_id: str = None) -> WorkflowState:
         """Execute workflow for a given idea."""
@@ -132,12 +111,9 @@ class IdeationWorkflow:
             #TODO: check if props can be accessed directly
             "messages": [HumanMessage(content=idea)],
             "idea": HumanMessage(content=idea),
-            "features": [],
-            "featureListApproved": False,
-            "techStack": [],
-            "techStackApproved": False,
-            "changeRequest": None,
-            "tasks": []
+            "features": Proposal(),
+            "techStack": Proposal(),
+            "tasks": Proposal(),
         }
         config = {"configurable": {"thread_id": thread_id}}
         result = await self.graph.ainvoke(initial_state, config)
