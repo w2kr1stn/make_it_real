@@ -2,7 +2,6 @@
 
 from abc import ABC, abstractmethod
 from typing import Any
-from ..graph2.state import Proposal
 
 class BaseAgent(ABC):
     """Abstract base class for all agents in the MakeItReal system."""
