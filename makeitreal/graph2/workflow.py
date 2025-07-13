@@ -67,7 +67,7 @@ class IdeationWorkflow:
              "rejected": "requirements_agent"},
         )
 
-        return workflow.compile(checkpointer=self.checkpointer)
+        return workflow.compile()
 
     def _requirement_analysis(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} requirement analysis")
@@ -100,22 +100,20 @@ class IdeationWorkflow:
         print(f"{key} review by human")
         proposal = state.get(key)
 
-        if proposal.humanApproved:
-            print("Skipped as already approved")
-        else:
+        if key == "techStack":
             decision = interrupt(
                 {
                     key: proposal
                 }
             )
-
+        proposal.humanApproved = True
 
 
         # proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
         # proposal.changeRequest = "Please remove feature xy"
         print("Received decision")
         return {
-            key: decision,
+            key: proposal,
         }
 
     def _log_tasks(self, state: WorkflowState) -> dict[str, Any]:

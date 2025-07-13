@@ -8,6 +8,7 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 from random import randint
+from langgraph.types import Command
 
 from .graph2 import IdeationWorkflow
 
@@ -37,25 +38,34 @@ def idea(
 
 
     featureProposal = state.get("features")
-    if featureProposal.proposedItems and featureProposal.agentApproved:
+    if featureProposal.proposedItems and featureProposal.agentApproved and not featureProposal.humanApproved:
         print("Approval for features:\n-"+"\n-".join(featureProposal.proposedItems))
-        featureProposal.humanApproved = True #randint(1,2) > 1
-        state["features"].humanApproved = True
+        # Nur das relevante Feld setzen
+        featureProposal.humanApproved = randint(1,2) > 1
         print("Human approved: ")
         print("yes" if featureProposal.humanApproved else "no")
-        state = asyncio.run(workflow.graph.ainvoke(state, config))
+        # Resume mit dem unveränderten State (nur das Feld wurde gesetzt)
+        # state = asyncio.run(workflow.graph.ainvoke(state, config))
+        state = asyncio.run(workflow.graph.ainvoke(Command(resume=featureProposal.humanApproved), config))
 
     print("cli2 techStack")
     techStackProposal = state.get("techStack")
     if techStackProposal.proposedItems and techStackProposal.agentApproved:
         print("Approval for techStack:\n-"+"\n-".join(techStackProposal.proposedItems))
         techStackProposal.humanApproved = randint(1,2) > 1
+        print("Human approved: ")
+        print("yes" if featureProposal.humanApproved else "no")
+        # state = asyncio.run(workflow.graph.ainvoke(state, config).reu)
+        state = asyncio.run(workflow.graph.ainvoke(Command(resume=techStackProposal.humanApproved),config))
 
     print("cli2 taskProposal")
     taskProposal = state.get("tasks")
     if taskProposal.proposedItems and taskProposal.agentApproved:
         print("Approval for tasks:\n-"+"\n-".join(taskProposal.proposedItems))
         taskProposal.humanApproved = randint(1,2) > 1
+        print("Human approved: ")
+        print("yes" if taskProposal.humanApproved else "no")
+        state = asyncio.run(workflow.graph.ainvoke(Command(resume=taskProposal.humanApproved),config))
 
 
 
