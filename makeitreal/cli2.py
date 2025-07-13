@@ -60,7 +60,7 @@ def idea(
 
     print("cli2 taskProposal")
     taskProposal = state.get("tasks")
-    if taskProposal.proposedItems and taskProposal.agentApproved:
+    if taskProposal.proposedItems and taskProposal.agentApproved and not taskProposal.humanApproved:
         print("Approval for tasks:\n-"+"\n-".join(taskProposal.proposedItems))
         taskProposal.humanApproved = randint(1,2) > 1
         print("Human approved: ")
