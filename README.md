@@ -17,11 +17,12 @@ make run IDEA='task management app for developers'
 
 ## Graph
 
-To dump the LangGraph mermaid, run:
+To dump the LangGraph mermaid diagram, run:
 ```sh
 make dump-graph
 ```
 
+Old graph:
 ```mermaid
 ---
 config:
@@ -44,6 +45,30 @@ graph TD;
 	idea_curator -. &nbsp;continue&nbsp; .-> spec_writer;
 	spec_writer -. &nbsp;end&nbsp; .-> __end__;
 	spec_writer -. &nbsp;continue&nbsp; .-> evaluator;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+```
+
+New graph (top-level; each node is actually a sub graph):
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	requirement_analysis(requirement_analysis)
+	techstack_discovery(techstack_discovery)
+	task_creation(task_creation)
+	log_tasks(log_tasks)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> requirement_analysis;
+	requirement_analysis --> techstack_discovery;
+	task_creation --> log_tasks;
+	techstack_discovery --> task_creation;
+	log_tasks --> __end__;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc
