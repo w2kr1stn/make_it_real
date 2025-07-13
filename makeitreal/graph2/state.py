@@ -24,4 +24,3 @@ class WorkflowState(TypedDict):
     features : Proposal
     techStack: Proposal
     tasks: Proposal
-    phase: str

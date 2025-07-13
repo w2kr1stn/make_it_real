@@ -35,11 +35,13 @@ def idea(
     with console.status("[green]Workflow processing...", spinner="dots"):
         state = asyncio.run(workflow.run(description, thread_id))
 
-    while not state.get("tasks").humanApproved:
-        phase = state.get("phase")
-        proposal = state.get(phase)
-        print(f"{phase}:\n- "+"\n- ".join(proposal.proposedItems))
-        approval = input(f"Do you approve {phase}? [Y|n]")
+    while len(state.get('__interrupt__') or []) > 0:
+        interrupts = state['__interrupt__']
+        print(interrupts)
+        proposal_key = interrupts[0].value
+        proposal = state.get(proposal_key)
+        print(f"{proposal_key}:\n- "+"\n- ".join(proposal.proposedItems))
+        approval = input(f"Do you approve {proposal_key}? [Y|n]")
         approved = not approval or approval.lower() == "y"
         state = asyncio.run(workflow.graph.ainvoke(Command(resume=approved), config))
 
