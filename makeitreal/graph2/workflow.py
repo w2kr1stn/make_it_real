@@ -84,6 +84,7 @@ class IdeationWorkflow:
 
         return {
             key: proposal,
+            "phase": key,
         }
 
     def _agent_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
@@ -94,26 +95,29 @@ class IdeationWorkflow:
 
         return {
             key: proposal,
+            "phase": key,
         }
 
     def _human_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} review by human")
         proposal = state.get(key)
 
-        if key == "techStack":
-            decision = interrupt(
-                {
-                    key: proposal
-                }
-            )
-        proposal.humanApproved = True
+        decision = interrupt(
+            {
+                key: proposal,
+                "phase": key,
+            }
+        )
 
+        proposal.humanApproved = decision
 
         # proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
-        # proposal.changeRequest = "Please remove feature xy"
-        print("Received decision")
+        # TODO:: proposal.changeRequest = "Please remove feature xy"
+        print(f"Received {key} decision: {decision}")
+
         return {
             key: proposal,
+            "phase": key,
         }
 
     def _log_tasks(self, state: WorkflowState) -> dict[str, Any]:
@@ -132,6 +136,7 @@ class IdeationWorkflow:
             "features": Proposal(),
             "techStack": Proposal(),
             "tasks": Proposal(),
+            "phase": "features",
         }
         config = {"configurable": {"thread_id": thread_id}}
         result = await self.graph.ainvoke(initial_state, config)
