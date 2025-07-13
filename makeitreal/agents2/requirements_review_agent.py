@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from ..config import openai_settings
-from .base_review_agent import ReviewAgent
+from .base_agent import BaseAgent
 from ..graph2.state import Proposal
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class ReviewResult(BaseModel):
     approved: bool = Field(..., description="Are the suggested features approved?")
 
 
-class RequirementsReviewAgent(ReviewAgent):
+class RequirementsReviewAgent(BaseAgent):
     """Agent responsible for evaluating technical specifications for feasibility and risk."""
 
     def __init__(self) -> None:

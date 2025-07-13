@@ -57,7 +57,7 @@ async def _run_idea(description: str, verbose: bool):
         changeRequest = ''
         if not approved:
             changeRequest = input(f"What do you want to change?")
-        state = asyncio.run(workflow.graph.ainvoke(Command(resume=changeRequest), config))
+        state = await workflow.graph.ainvoke(Command(resume=changeRequest), config)
 
 if __name__ == "__main__":
     app()
