@@ -7,6 +7,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
+from random import randint
 
 from .graph2 import IdeationWorkflow
 
@@ -30,47 +31,33 @@ def idea(
     thread_id = "cli_session"  # Use consistent thread_id for checkpointing
 
     with console.status("[green]Workflow processing...", spinner="dots"):
-        result = asyncio.run(workflow.run(description, thread_id))
+        state = asyncio.run(workflow.run(description, thread_id))
 
-    #TODO: impl interrupt
-    # if result.get("features") and result.get("featureListApproved"):
+    config = {"configurable": {"thread_id": thread_id}}
 
-    # # Check if workflow was interrupted for human review
-    # # LangGraph interrupts return the current state before the interrupt node
-    # if result.get("evaluation_results") and result.get("current_phase") == "evaluated":
-    #     console.print()
-    #     console.print(
-    #         Panel(
-    #             "🔍 Technical specification and evaluation completed!\n"
-    #             "The workflow is paused for your review.",
-    #             title="Human Review Required",
-    #             style="yellow",
-    #         )
-    #     )
+    while True:
 
-    #     result = _handle_human_review(workflow, result, thread_id)
+        featureProposal = state.get("features")
+        if featureProposal.proposedItems and featureProposal.agentApproved:
+            print("Approval for features:\n-"+"\n-".join(featureProposal.proposedItems))
+            featureProposal.humanApproved = randint(1,2) > 1
+            state["features"] = featureProposal
+            print("Human approved: ")
+            print("yes" if featureProposal.humanApproved else "no")
+            state = asyncio.run(workflow.graph.ainvoke(state, config))
 
-    # # Handle rejection case
-    # if result.get("current_phase") == "rejected":
-    #     console.print()
-    #     console.print(
-    #         Panel(
-    #             "The workflow was terminated because the specification was rejected.\n"
-    #             "You can run the command again to generate a new specification.",
-    #             title="Workflow Terminated",
-    #             style="red",
-    #         )
-    #     )
-    #     return
 
-    # if result.get("error"):
-    #     raise Exception(result["error"])
+        techStackProposal = state.get("techStack")
+        if techStackProposal.proposedItems and techStackProposal.agentApproved:
+            print("Approval for techStack:\n-"+"\n-".join(techStackProposal.proposedItems))
+            techStackProposal.humanApproved = randint(1,2) > 1
 
-    # curation = result["product_idea"]
-    # technical_spec = result.get("technical_spec", {})
-    # evaluation_results = result.get("evaluation_results", {})
+        taskProposal = state.get("tasks")
+        if taskProposal.proposedItems and taskProposal.agentApproved:
+            print("Approval for tasks:\n-"+"\n-".join(taskProposal.proposedItems))
+            taskProposal.humanApproved = randint(1,2) > 1
 
-    # _display_structured_results(curation, technical_spec, evaluation_results)
+
 
 
 def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, thread_id: str) -> dict:
