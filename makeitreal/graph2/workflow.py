@@ -10,8 +10,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from .state import WorkflowState, Proposal
-from ..agents.base import BaseAgent
-from ..agents.requirements_review_agent import RequirementsReviewAgent
+from ..agents2.base_review_agent import ReviewAgent
+from ..agents2.requirements_review_agent import RequirementsReviewAgent
 
 class IdeationWorkflow:
     """LangGraph workflow for processing product ideas."""
@@ -42,7 +42,7 @@ class IdeationWorkflow:
 
         return workflow.compile(checkpointer=self.checkpointer)
 
-    async def _build_proposal_graph(self, key: str, reviewAgent:BaseAgent):
+    async def _build_proposal_graph(self, key: str, reviewAgent:ReviewAgent):
         """Build a LangGraph sub graph of the workflow."""
         workflow = StateGraph(WorkflowState)
 
@@ -54,7 +54,7 @@ class IdeationWorkflow:
 
         workflow.add_edge(START, "requirements_agent")
         workflow.add_edge("requirements_agent", "review_agent")
-        
+
         workflow.add_conditional_edges(
             "review_agent",
             lambda state: state.get(key).agentApproved and "approved" or "rejected",
@@ -87,14 +87,12 @@ class IdeationWorkflow:
             key: proposal,
         }
 
-    async def _agent_review(self, state: WorkflowState, key: str, agent:BaseAgent) -> dict[str, Any]:
+    async def _agent_review(self, state: WorkflowState, key: str, agent:ReviewAgent) -> dict[str, Any]:
         print(f"{key} review by agent")
         proposal = state.get(key)
         result = await agent.process(proposal=proposal, idea=state.get("idea"))
-        print("results")
-        print(result)
         proposal.agentApproved = result["approved"]
-        proposal.changeRequest = result["changes"] or ""        
+        proposal.changeRequest = result["changes"] or ""
 
         return {
             key: proposal,
