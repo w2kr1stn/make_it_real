@@ -2,9 +2,10 @@
 
 from abc import ABC, abstractmethod
 from typing import Any
+from ..graph2.state import Proposal
 
-class BaseAgent(ABC):
-    """Abstract base class for all agents in the MakeItReal system."""
+class ReviewAgent(ABC):
+    """Abstract review agent base class for all review agents in the MakeItReal system."""
 
     def __init__(self, name: str) -> None:
         """Initialize agent with a name.
@@ -15,7 +16,7 @@ class BaseAgent(ABC):
         self.name = name
 
     @abstractmethod
-    async def process(self, input_data: dict[str, Any]) -> dict[str, Any]:
+    async def process(self, proposal: Proposal, idea:str) -> dict[str, Any]:
         """Process input data and return structured output.
 
         Args:

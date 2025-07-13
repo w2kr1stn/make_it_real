@@ -10,7 +10,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from .state import WorkflowState, Proposal
-
+from ..agents2.base_review_agent import ReviewAgent
+from ..agents2.requirements_review_agent import RequirementsReviewAgent
 
 class IdeationWorkflow:
     """LangGraph workflow for processing product ideas."""
@@ -18,16 +19,19 @@ class IdeationWorkflow:
     def __init__(self):
         """Initialize the workflow with memory checkpointing."""
         self.checkpointer = MemorySaver()
-        self.graph = self._build_graph()
+        self.graph = None
 
-    def _build_graph(self):
+    async def ainit(self):
+        self.graph = await self._build_graph()
+
+    async def _build_graph(self):
         """Build the LangGraph workflow."""
         workflow = StateGraph(WorkflowState)
 
-        workflow.add_node("requirement_analysis", self._build_proposal_graph("features")) #params: reviewAgent:xy, requirementAgenzt:foo
-        workflow.add_node("techstack_discovery", self._build_proposal_graph("techStack"))   #params: reviewAgent:bla, requirementAgenzt:blub
+        workflow.add_node("requirement_analysis", await self._build_proposal_graph("features", RequirementsReviewAgent())) #params: reviewAgent:xy, requirementAgenzt:foo
+        workflow.add_node("techstack_discovery", await self._build_proposal_graph("techStack", RequirementsReviewAgent()))   #params: reviewAgent:bla, requirementAgenzt:blub
         #marketAnalyse propaselGraph #params: reviewAgent:marktReview, requirementAgent:markRequirements
-        workflow.add_node("task_creation", self._build_proposal_graph("tasks"))
+        workflow.add_node("task_creation", await self._build_proposal_graph("tasks", RequirementsReviewAgent()))
         workflow.add_node("log_tasks", self._log_tasks)
 
         workflow.add_edge(START, "requirement_analysis")
@@ -38,22 +42,19 @@ class IdeationWorkflow:
 
         return workflow.compile(checkpointer=self.checkpointer)
 
-    def _build_proposal_graph(self, key: str):
+    async def _build_proposal_graph(self, key: str, reviewAgent:ReviewAgent):
         """Build a LangGraph sub graph of the workflow."""
         workflow = StateGraph(WorkflowState)
 
         workflow.add_node("requirements_agent", lambda state: self._requirement_analysis(state, key))
-        workflow.add_node("review_agent", lambda state: self._agent_review(state, key))
+        async def review_agent_node(state):
+            return await self._agent_review(state, key, reviewAgent)
+        workflow.add_node("review_agent", review_agent_node)
         workflow.add_node("human_review", lambda state: self._human_review(state, key))
 
         workflow.add_edge(START, "requirements_agent")
         workflow.add_edge("requirements_agent", "review_agent")
-        # workflow.add_conditional_edges(
-        #     START,
-        #     lambda state: state.get(key).humanApproved and "done" or "work",
-        #     {"done": END ,
-        #      "work": "requirements_agent"},
-        # )
+
         workflow.add_conditional_edges(
             "review_agent",
             lambda state: state.get(key).agentApproved and "approved" or "rejected",
@@ -88,11 +89,12 @@ class IdeationWorkflow:
             key: proposal,
         }
 
-    def _agent_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
+    async def _agent_review(self, state: WorkflowState, key: str, agent:ReviewAgent) -> dict[str, Any]:
         print(f"{key} review by agent")
         proposal = state.get(key)
-        proposal.agentApproved = proposal.agentApproved or randint(1,2) > 1
-        proposal.changeRequest = "Add the missing feature xy"
+        result = await agent.process(proposal=proposal, idea=state.get("idea"))
+        proposal.agentApproved = result["approved"]
+        proposal.changeRequest = result["changes"] or ""
 
         return {
             key: proposal,
