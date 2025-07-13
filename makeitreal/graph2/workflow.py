@@ -7,8 +7,8 @@ from typing import Any
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import interrupt
 
-from .human_review import human_review_node,human_review_features_node,human_review_techstack_node
 from .state import WorkflowState, Proposal
 
 
@@ -24,8 +24,9 @@ class IdeationWorkflow:
         """Build the LangGraph workflow."""
         workflow = StateGraph(WorkflowState)
 
-        workflow.add_node("requirement_analysis", self._build_proposal_graph("features"))
-        workflow.add_node("techstack_discovery", self._build_proposal_graph("techStack"))
+        workflow.add_node("requirement_analysis", self._build_proposal_graph("features")) #params: reviewAgent:xy, requirementAgenzt:foo
+        workflow.add_node("techstack_discovery", self._build_proposal_graph("techStack"))   #params: reviewAgent:bla, requirementAgenzt:blub
+        #marketAnalyse propaselGraph #params: reviewAgent:marktReview, requirementAgent:markRequirements
         workflow.add_node("task_creation", self._build_proposal_graph("tasks"))
         workflow.add_node("log_tasks", self._log_tasks)
 
@@ -47,6 +48,12 @@ class IdeationWorkflow:
 
         workflow.add_edge(START, "requirements_agent")
         workflow.add_edge("requirements_agent", "review_agent")
+        # workflow.add_conditional_edges(
+        #     START,
+        #     lambda state: state.get(key).humanApproved and "done" or "work",
+        #     {"done": END ,
+        #      "work": "requirements_agent"},
+        # )
         workflow.add_conditional_edges(
             "review_agent",
             lambda state: state.get(key).agentApproved and "approved" or "rejected",
@@ -60,7 +67,7 @@ class IdeationWorkflow:
              "rejected": "requirements_agent"},
         )
 
-        return workflow.compile(checkpointer=self.checkpointer)
+        return workflow.compile()
 
     def _requirement_analysis(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} requirement analysis")
@@ -72,6 +79,7 @@ class IdeationWorkflow:
             f"{key} item 4",
             f"{key} item 5",
         ]
+
         proposal.changeRequest = None
 
         return {
@@ -91,8 +99,12 @@ class IdeationWorkflow:
     def _human_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} review by human")
         proposal = state.get(key)
-        proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
-        proposal.changeRequest = "Please remove feature xy"
+        decision = interrupt(key)
+        proposal.humanApproved = decision
+
+        # proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
+        # TODO:: proposal.changeRequest = "Please remove feature xy"
+        print(f"Received {key} decision: {decision}")
 
         return {
             key: proposal,

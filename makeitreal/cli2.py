@@ -7,6 +7,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
+from random import randint
+from langgraph.types import Command, interrupt
 
 from .graph2 import IdeationWorkflow
 
@@ -28,49 +30,20 @@ def idea(
 
     workflow = IdeationWorkflow()
     thread_id = "cli_session"  # Use consistent thread_id for checkpointing
+    config = {"configurable": {"thread_id": thread_id}}
 
     with console.status("[green]Workflow processing...", spinner="dots"):
-        result = asyncio.run(workflow.run(description, thread_id))
+        state = asyncio.run(workflow.run(description, thread_id))
 
-    #TODO: impl interrupt
-    # if result.get("features") and result.get("featureListApproved"):
-
-    # # Check if workflow was interrupted for human review
-    # # LangGraph interrupts return the current state before the interrupt node
-    # if result.get("evaluation_results") and result.get("current_phase") == "evaluated":
-    #     console.print()
-    #     console.print(
-    #         Panel(
-    #             "🔍 Technical specification and evaluation completed!\n"
-    #             "The workflow is paused for your review.",
-    #             title="Human Review Required",
-    #             style="yellow",
-    #         )
-    #     )
-
-    #     result = _handle_human_review(workflow, result, thread_id)
-
-    # # Handle rejection case
-    # if result.get("current_phase") == "rejected":
-    #     console.print()
-    #     console.print(
-    #         Panel(
-    #             "The workflow was terminated because the specification was rejected.\n"
-    #             "You can run the command again to generate a new specification.",
-    #             title="Workflow Terminated",
-    #             style="red",
-    #         )
-    #     )
-    #     return
-
-    # if result.get("error"):
-    #     raise Exception(result["error"])
-
-    # curation = result["product_idea"]
-    # technical_spec = result.get("technical_spec", {})
-    # evaluation_results = result.get("evaluation_results", {})
-
-    # _display_structured_results(curation, technical_spec, evaluation_results)
+    while len(state.get('__interrupt__') or []) > 0:
+        interrupts = state['__interrupt__']
+        print(interrupts)
+        proposal_key = interrupts[0].value
+        proposal = state.get(proposal_key)
+        print(f"{proposal_key}:\n- "+"\n- ".join(proposal.proposedItems))
+        approval = input(f"Do you approve {proposal_key}? [Y|n]")
+        approved = not approval or approval.lower() == "y"
+        state = asyncio.run(workflow.graph.ainvoke(Command(resume=approved), config))
 
 
 def _handle_human_review(workflow: IdeationWorkflow, current_result: dict, thread_id: str) -> dict:
