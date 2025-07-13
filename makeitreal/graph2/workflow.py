@@ -10,7 +10,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
 from .state import WorkflowState, Proposal
-from ..agents2.base_review_agent import ReviewAgent
+from ..agents2.base_agent import BaseAgent
+from ..agents2.requirements_generator_agent import RequirementsGeneratorAgent
 from ..agents2.requirements_review_agent import RequirementsReviewAgent
 
 class IdeationWorkflow:
@@ -28,10 +29,9 @@ class IdeationWorkflow:
         """Build the LangGraph workflow."""
         workflow = StateGraph(WorkflowState)
 
-        workflow.add_node("requirement_analysis", await self._build_proposal_graph("features", RequirementsReviewAgent())) #params: reviewAgent:xy, requirementAgenzt:foo
-        workflow.add_node("techstack_discovery", await self._build_proposal_graph("techStack", RequirementsReviewAgent()))   #params: reviewAgent:bla, requirementAgenzt:blub
-        #marketAnalyse propaselGraph #params: reviewAgent:marktReview, requirementAgent:markRequirements
-        workflow.add_node("task_creation", await self._build_proposal_graph("tasks", RequirementsReviewAgent()))
+        workflow.add_node("requirement_analysis", await self._build_proposal_graph("features", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
+        workflow.add_node("techstack_discovery", await self._build_proposal_graph("techStack", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
+        workflow.add_node("task_creation", await self._build_proposal_graph("tasks", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
         workflow.add_node("log_tasks", self._log_tasks)
 
         workflow.add_edge(START, "requirement_analysis")
@@ -42,13 +42,17 @@ class IdeationWorkflow:
 
         return workflow.compile(checkpointer=self.checkpointer)
 
-    async def _build_proposal_graph(self, key: str, reviewAgent:ReviewAgent):
+    async def _build_proposal_graph(self, key: str, generatorAgent: RequirementsGeneratorAgent, reviewAgent: RequirementsReviewAgent):
         """Build a LangGraph sub graph of the workflow."""
         workflow = StateGraph(WorkflowState)
 
-        workflow.add_node("requirements_agent", lambda state: self._requirement_analysis(state, key))
+        async def generate_agent_node(state):
+            await self._requirement_analysis(state, key, generatorAgent)
+
         async def review_agent_node(state):
             return await self._agent_review(state, key, reviewAgent)
+
+        workflow.add_node("requirements_agent", generate_agent_node)
         workflow.add_node("review_agent", review_agent_node)
         workflow.add_node("human_review", lambda state: self._human_review(state, key))
 
@@ -70,7 +74,7 @@ class IdeationWorkflow:
 
         return workflow.compile()
 
-    def _requirement_analysis(self, state: WorkflowState, key: str) -> dict[str, Any]:
+    async def _requirement_analysis(self, state: WorkflowState, key: str, agent: RequirementsGeneratorAgent) -> dict[str, Any]:
         print(f"{key} requirement analysis")
         proposal = state.get(key)
         proposal.proposedItems = proposal.proposedItems or [
@@ -81,15 +85,16 @@ class IdeationWorkflow:
             f"{key} item 5",
         ]
 
-        if proposal.changeRequest:
-            proposal.proposedItems.append(f"{key} added item {len(proposal.proposedItems)+1}")
-            proposal.changeRequest = None
+        result = await agent.process(proposal=proposal, idea=state.get("idea"))
+
+        proposal.proposedItems = result["items"]
+        proposal.changeRequest = None
 
         return {
             key: proposal,
         }
 
-    async def _agent_review(self, state: WorkflowState, key: str, agent:ReviewAgent) -> dict[str, Any]:
+    async def _agent_review(self, state: WorkflowState, key: str, agent: BaseAgent) -> dict[str, Any]:
         print(f"{key} review by agent")
         proposal = state.get(key)
         result = await agent.process(proposal=proposal, idea=state.get("idea"))
