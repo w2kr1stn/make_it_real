@@ -81,7 +81,9 @@ class IdeationWorkflow:
             f"{key} item 5",
         ]
 
-        proposal.changeRequest = None
+        if proposal.changeRequest:
+            proposal.proposedItems.append(f"{key} added item {len(proposal.proposedItems)+1}")
+            proposal.changeRequest = None
 
         return {
             key: proposal,
@@ -101,12 +103,12 @@ class IdeationWorkflow:
     def _human_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} review by human")
         proposal = state.get(key)
-        decision = interrupt(key)
-        proposal.humanApproved = decision
+        proposal.changeRequest = interrupt({"key": key, "state": state})
+        proposal.humanApproved = proposal.changeRequest == ''
 
         # proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
         # TODO:: proposal.changeRequest = "Please remove feature xy"
-        print(f"Received {key} decision: {decision}")
+        print(f"Received {key} decision: {proposal.changeRequest == ''}, changeRequest: {proposal.changeRequest}")
 
         return {
             key: proposal,

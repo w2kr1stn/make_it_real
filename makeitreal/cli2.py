@@ -43,14 +43,21 @@ async def _run_idea(description: str, verbose: bool):
 
     while len(state.get('__interrupt__') or []) > 0:
         interrupts = state['__interrupt__']
-        print(interrupts)
-        proposal_key = interrupts[0].value
+        proposal_key = interrupts[0].value['key']
+        state = interrupts[0].value['state']
         proposal = state.get(proposal_key)
         print(f"{proposal_key}:\n- "+"\n- ".join(proposal.proposedItems))
-        approval = input(f"Do you approve {proposal_key}? [Y|n]")
-        approved = not approval or approval.lower() == "y"
-        state = await workflow.graph.ainvoke(Command(resume=approved), config)
 
+        approved = False
+        while True:
+            approval = input(f"Do you approve {proposal_key}? [Y|n]")
+            approved = not approval or approval.lower() == "y"
+            if approved or approval.lower() == "n":
+                break
+        changeRequest = ''
+        if not approved:
+            changeRequest = input(f"What do you want to change?")
+        state = asyncio.run(workflow.graph.ainvoke(Command(resume=changeRequest), config))
 
 if __name__ == "__main__":
     app()
