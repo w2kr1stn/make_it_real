@@ -35,27 +35,27 @@ def idea(
 
     config = {"configurable": {"thread_id": thread_id}}
 
-    while True:
 
-        featureProposal = state.get("features")
-        if featureProposal.proposedItems and featureProposal.agentApproved:
-            print("Approval for features:\n-"+"\n-".join(featureProposal.proposedItems))
-            featureProposal.humanApproved = randint(1,2) > 1
-            state["features"] = featureProposal
-            print("Human approved: ")
-            print("yes" if featureProposal.humanApproved else "no")
-            state = asyncio.run(workflow.graph.ainvoke(state, config))
+    featureProposal = state.get("features")
+    if featureProposal.proposedItems and featureProposal.agentApproved:
+        print("Approval for features:\n-"+"\n-".join(featureProposal.proposedItems))
+        featureProposal.humanApproved = True #randint(1,2) > 1
+        state["features"].humanApproved = True
+        print("Human approved: ")
+        print("yes" if featureProposal.humanApproved else "no")
+        state = asyncio.run(workflow.graph.ainvoke(state, config))
 
+    print("cli2 techStack")
+    techStackProposal = state.get("techStack")
+    if techStackProposal.proposedItems and techStackProposal.agentApproved:
+        print("Approval for techStack:\n-"+"\n-".join(techStackProposal.proposedItems))
+        techStackProposal.humanApproved = randint(1,2) > 1
 
-        techStackProposal = state.get("techStack")
-        if techStackProposal.proposedItems and techStackProposal.agentApproved:
-            print("Approval for techStack:\n-"+"\n-".join(techStackProposal.proposedItems))
-            techStackProposal.humanApproved = randint(1,2) > 1
-
-        taskProposal = state.get("tasks")
-        if taskProposal.proposedItems and taskProposal.agentApproved:
-            print("Approval for tasks:\n-"+"\n-".join(taskProposal.proposedItems))
-            taskProposal.humanApproved = randint(1,2) > 1
+    print("cli2 taskProposal")
+    taskProposal = state.get("tasks")
+    if taskProposal.proposedItems and taskProposal.agentApproved:
+        print("Approval for tasks:\n-"+"\n-".join(taskProposal.proposedItems))
+        taskProposal.humanApproved = randint(1,2) > 1
 
 
 

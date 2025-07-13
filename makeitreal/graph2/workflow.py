@@ -46,14 +46,14 @@ class IdeationWorkflow:
         workflow.add_node("review_agent", lambda state: self._agent_review(state, key))
         workflow.add_node("human_review", lambda state: self._human_review(state, key))
 
-        # workflow.add_edge(START, "requirements_agent")
+        workflow.add_edge(START, "requirements_agent")
         workflow.add_edge("requirements_agent", "review_agent")
-        workflow.add_conditional_edges(
-            START,
-            lambda state: state.get(key).humanApproved and "done" or "work",
-            {"done": END ,
-             "work": "requirements_agent"},
-        )
+        # workflow.add_conditional_edges(
+        #     START,
+        #     lambda state: state.get(key).humanApproved and "done" or "work",
+        #     {"done": END ,
+        #      "work": "requirements_agent"},
+        # )
         workflow.add_conditional_edges(
             "review_agent",
             lambda state: state.get(key).agentApproved and "approved" or "rejected",
@@ -99,11 +99,17 @@ class IdeationWorkflow:
     def _human_review(self, state: WorkflowState, key: str) -> dict[str, Any]:
         print(f"{key} review by human")
         proposal = state.get(key)
-        decision = interrupt(
-            {
-                key: proposal
-            }
-        )
+
+        if proposal.humanApproved:
+            print("Skipped as already approved")
+        else:
+            decision = interrupt(
+                {
+                    key: proposal
+                }
+            )
+
+
 
         # proposal.humanApproved = proposal.humanApproved or randint(1,2) > 1
         # proposal.changeRequest = "Please remove feature xy"
