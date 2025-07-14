@@ -1,5 +1,5 @@
 FROM python:3.13-alpine3.22
-RUN apk add --update --no-cache uv
+RUN apk add --update --no-cache uv docker-cli
 COPY pyproject.toml uv.lock README.md /make_it_real/
 WORKDIR /make_it_real
 RUN uv sync
