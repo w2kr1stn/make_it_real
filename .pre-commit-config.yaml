@@ -1,0 +1,35 @@
+default_language_version:
+  python: python3.13
+
+repos:
+  # Pre-commit hooks for general file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Ruff for linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.2
+    hooks:
+      # Run the linter first (with --fix for auto-fixing)
+      - id: ruff
+        types_or: [python, pyi]
+        args: [--fix]
+      # Run the formatter after linting
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # UV-specific hooks for dependency management
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.7.20
+    hooks:
+      # Keep uv.lock file up to date
+      - id: uv-lock
