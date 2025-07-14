@@ -59,9 +59,6 @@ async def _run_idea(description: str, verbose: bool):
             change_request = input("What do you want to change?")
         state = await workflow.graph.ainvoke(Command(resume=change_request), config)
 
-    # Save final state after all interrupts are handled
-    workflow._save_state_to_json(state)
-
 
 if __name__ == "__main__":
     app()

@@ -142,10 +142,6 @@ class IdeationWorkflow:
             key: proposal,
         }
 
-    def _log_tasks(self, state: WorkflowState) -> dict[str, Any]:
-        print("TASKS:\n* " + ("\n* ".join(state.get("tasks").proposed_items)))
-        return {}
-
     def _save_state_to_json(self, state: WorkflowState) -> None:
         """Save workflow state to JSON file."""
         os.makedirs(".state", exist_ok=True)
@@ -162,6 +158,11 @@ class IdeationWorkflow:
                 indent=2,
             )
         print(f"\nState saved to {filename} ✓")
+
+    def _log_tasks(self, state: WorkflowState) -> dict[str, Any]:
+        print("TASKS:\n* " + ("\n* ".join(state.get("tasks").proposed_items)))
+        self._save_state_to_json(state)
+        return {}
 
     async def run(self, idea: str, thread_id: str = None) -> WorkflowState:
         """Execute workflow for a given idea."""
