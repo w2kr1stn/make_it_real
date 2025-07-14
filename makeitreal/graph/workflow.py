@@ -1,6 +1,9 @@
 """LangGraph workflow implementation for idea processing."""
 
+import json
+import os
 import uuid
+from datetime import datetime
 from typing import Any
 
 from langchain_core.messages import HumanMessage
@@ -16,7 +19,6 @@ from makeitreal.agents.task_review_agent import TaskReviewAgent
 from makeitreal.agents.techstack_generator_agent import TechStackGeneratorAgent
 from makeitreal.agents.techstack_review_agent import TechStackReviewAgent
 from makeitreal.graph.state import Proposal, WorkflowState
-
 
 
 class IdeationWorkflow:
@@ -48,9 +50,7 @@ class IdeationWorkflow:
         )
         workflow.add_node(
             "task_creation",
-            await self._build_proposal_graph(
-                "tasks", TaskGeneratorAgent(), TaskReviewAgent()
-            ),
+            await self._build_proposal_graph("tasks", TaskGeneratorAgent(), TaskReviewAgent()),
         )
         workflow.add_node("log_tasks", self._log_tasks)
 
@@ -146,6 +146,23 @@ class IdeationWorkflow:
         print("TASKS:\n* " + ("\n* ".join(state.get("tasks").proposed_items)))
         return {}
 
+    def _save_state_to_json(self, state: WorkflowState) -> None:
+        """Save workflow state to JSON file."""
+        os.makedirs(".state", exist_ok=True)
+        filename = f".state/state_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(filename, "w") as f:
+            json.dump(
+                {
+                    "idea": state["idea"].content,
+                    "features": state["features"].model_dump(),
+                    "tech_stack": state["tech_stack"].model_dump(),
+                    "tasks": state["tasks"].model_dump(),
+                },
+                f,
+                indent=2,
+            )
+        print(f"\nState saved to {filename} ✓")
+
     async def run(self, idea: str, thread_id: str = None) -> WorkflowState:
         """Execute workflow for a given idea."""
         if thread_id is None:
@@ -160,5 +177,7 @@ class IdeationWorkflow:
         }
         config = {"configurable": {"thread_id": thread_id}}
         result = await self.graph.ainvoke(initial_state, config)
+
+        self._save_state_to_json(result)
 
         return result
