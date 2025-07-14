@@ -14,11 +14,11 @@ async def _dump(workflow: IdeationWorkflow) -> None:
     await workflow.ainit()
     
 
-    print("Main Graph")
+    print("Main Graph (top-level; each node is actually a sub graph):")
     print("```mermaid")
     print(workflow.graph.get_graph().draw_mermaid())
     print("```")
-    print("Sub Graph")
+    print("Sub graph (used within each `requirements_analysis`, `techstack_discovery`, `task_creation` in the graph above)")
     print("```mermaid")
     print((await workflow._build_proposal_graph(key="features",generator_agent=RequirementsGeneratorAgent(),review_agent=RequirementsReviewAgent())).get_graph().draw_mermaid())
     print("```")
