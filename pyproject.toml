@@ -39,7 +39,7 @@ Repository = "https://github.com/w2kr1stn/make_it_real"
 format = "manage:format"
 test = "manage:test"
 makeitreal = "makeitreal.cli:app"
-dumpgraph = "makeitreal.dump_graph:app"
+dumpgraph = "makeitreal.sub_commands.dump_graph:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["makeitreal"]

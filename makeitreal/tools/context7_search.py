@@ -2,7 +2,7 @@
 
 from langchain_core.tools import tool
 
-from .mcp_client import search_library_documentation
+from makeitreal.tools.mcp_client import search_library_documentation
 
 
 @tool

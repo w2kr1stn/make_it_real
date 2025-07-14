@@ -7,7 +7,7 @@ from langgraph.types import Command
 from rich.console import Console
 from rich.panel import Panel
 
-from .graph import IdeationWorkflow
+from makeitreal.graph import IdeationWorkflow
 
 app = typer.Typer(help="Transform ideas into structured product concepts")
 console = Console()

@@ -6,9 +6,9 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from ..config import openai_settings
-from ..graph.state import Proposal
-from .base_agent import BaseAgent
+from makeitreal.agents.base_agent import BaseAgent
+from makeitreal.config import openai_settings
+from makeitreal.graph.state import Proposal
 
 
 class ReviewResult(BaseModel):

@@ -8,12 +8,12 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
-from ..agents.base_agent import BaseAgent
-from ..agents.requirements_generator_agent import RequirementsGeneratorAgent
-from ..agents.requirements_review_agent import RequirementsReviewAgent
-from ..agents.techstack_generator_agent import TechStackGeneratorAgent
-from ..agents.techstack_review_agent import TechStackReviewAgent
-from .state import Proposal, WorkflowState
+from makeitreal.agents.base_agent import BaseAgent
+from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
+from makeitreal.agents.requirements_review_agent import RequirementsReviewAgent
+from makeitreal.agents.techstack_generator_agent import TechStackGeneratorAgent
+from makeitreal.agents.techstack_review_agent import TechStackReviewAgent
+from makeitreal.graph.state import Proposal, WorkflowState
 
 
 class IdeationWorkflow:

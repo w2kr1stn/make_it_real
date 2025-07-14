@@ -6,7 +6,7 @@ from langgraph.types import interrupt
 from rich.console import Console
 from rich.panel import Panel
 
-from .state import WorkflowState
+from makeitreal.graph.state import WorkflowState
 
 console = Console()
 
