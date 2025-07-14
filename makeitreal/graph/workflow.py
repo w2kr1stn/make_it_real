@@ -179,6 +179,4 @@ class IdeationWorkflow:
         config = {"configurable": {"thread_id": thread_id}}
         result = await self.graph.ainvoke(initial_state, config)
 
-        self._save_state_to_json(result)
-
         return result
