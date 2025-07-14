@@ -46,7 +46,7 @@ async def _run_idea(description: str, verbose: bool):
         proposal_key = interrupts[0].value['key']
         state = interrupts[0].value['state']
         proposal = state.get(proposal_key)
-        print(f"{proposal_key}:\n- "+"\n- ".join(proposal.proposedItems))
+        print(f"{proposal_key}:"+"".join([f"\n  {i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]))
 
         approved = False
         while True:

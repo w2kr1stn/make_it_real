@@ -1,4 +1,4 @@
-"""Evaluator agent for feasibility assessment and risk analysis."""
+"""Use-case review agent."""
 
 from typing import Any
 
@@ -15,7 +15,7 @@ class ReviewResult(BaseModel):
     """The result of a review."""
 
     changes: str = Field(..., description="Requested changes to the proposal")
-    approved: bool = Field(..., description="Are the suggested features approved?")
+    approved: bool = Field(..., description="Set to true only when there are no changes needed")
 
 
 class RequirementsReviewAgent(BaseAgent):
@@ -31,6 +31,32 @@ class RequirementsReviewAgent(BaseAgent):
         ).with_structured_output(
             ReviewResult, method="function_calling"
         )
+        self._init_prompt()
+
+    def _init_prompt(self):
+        self.prompt = ChatPromptTemplate(
+            partial_variables = {
+                "kind": self._kind(),
+            },
+            messages = [
+                ("system", self._build_review_system_prompt()),
+                ("human", """I have the following idea:
+                 {idea}
+
+                 Based on the idea, the following {kind} have been identified:
+                 {items}
+
+                 Please review the {kind} meticulously and ask yourself the following questions:
+                 * Are there any {kind} missing in the list that would be required to make the idea work? If so, they should be added.
+                 * Are there any {kind} in the list that are not strictly required for an MVP implementation? If so, they should be removed.
+
+                 Finally please propose changes, if necessary, or approve otherwise!
+                 """),
+            ],
+        )
+
+    def _kind(self) -> str:
+        return "use-cases"
 
     async def process(self, idea:str, proposal: Proposal) -> dict[str, Any]:
         """Reviewes the suggested changes to the proposal.
@@ -41,26 +67,11 @@ class RequirementsReviewAgent(BaseAgent):
         Returns:
             Dictionary containing structured review results
         """
-        print("Process review")
-        if not proposal.proposedItems:
-            raise ValueError("No proposedItems provided for review")
-
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self._build_review_system_prompt()),
-                ("human", """I have created the following list of features:
-                 {items}
-
-                 Derived from the following idea of a person:
-                 {idea}
-
-                 Please review these features and propose changes to me if they would make sense or approve the features.
-                 """),
-            ]
-        )
-
-        chain = prompt | self.llm
-        result = await chain.ainvoke({"items": "\n\t- ".join(proposal.proposedItems),"idea": idea})
+        chain = self.prompt | self.llm
+        result = await chain.ainvoke({
+            "items": "\n".join([f"{i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]),
+            "idea": idea,
+        })
         print("review results")
         print(result.model_dump())
 

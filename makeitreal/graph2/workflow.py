@@ -13,6 +13,9 @@ from .state import WorkflowState, Proposal
 from ..agents2.base_agent import BaseAgent
 from ..agents2.requirements_generator_agent import RequirementsGeneratorAgent
 from ..agents2.requirements_review_agent import RequirementsReviewAgent
+from ..agents2.techstack_generator_agent import TechStackGeneratorAgent
+from ..agents2.techstack_review_agent import TechStackReviewAgent
+
 
 class IdeationWorkflow:
     """LangGraph workflow for processing product ideas."""
@@ -30,7 +33,7 @@ class IdeationWorkflow:
         workflow = StateGraph(WorkflowState)
 
         workflow.add_node("requirement_analysis", await self._build_proposal_graph("features", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
-        workflow.add_node("techstack_discovery", await self._build_proposal_graph("techStack", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
+        workflow.add_node("techstack_discovery", await self._build_proposal_graph("techStack", TechStackGeneratorAgent(), TechStackReviewAgent()))
         workflow.add_node("task_creation", await self._build_proposal_graph("tasks", RequirementsGeneratorAgent(), RequirementsReviewAgent()))
         workflow.add_node("log_tasks", self._log_tasks)
 
