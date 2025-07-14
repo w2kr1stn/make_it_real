@@ -5,7 +5,7 @@ from typing import Any
 from ..graph2.state import Proposal
 
 class BaseAgent(ABC):
-    """Abstract review agent base class for all review agents in the MakeItReal system."""
+    """Abstract agent base class for all agents in the MakeItReal system."""
 
     def __init__(self, name: str) -> None:
         """Initialize agent with a name.

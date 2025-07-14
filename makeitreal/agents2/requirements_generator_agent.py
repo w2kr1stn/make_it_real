@@ -1,4 +1,4 @@
-"""Evaluator agent for feasibility assessment and risk analysis."""
+"""use-case/requirements generator agent."""
 
 from typing import Any
 
@@ -30,6 +30,31 @@ class RequirementsGeneratorAgent(BaseAgent):
         ).with_structured_output(
             ProposalResult, method="function_calling"
         )
+        self._init_prompt()
+
+    def _init_prompt(self):
+        self.prompt = ChatPromptTemplate(
+            partial_variables = {
+                "kind": self._kind(),
+            },
+            messages = [
+                ("system", self._build_system_prompt()),
+                ("human", """I have the following idea:
+                 {idea}
+
+                 Based on the idea, the following {kind} have been identified already:
+                 {items}
+
+                 I want additional changes:
+                 {changeRequest}
+
+                 Please list the {kind} of that idea!
+                 """),
+            ],
+        )
+
+    def _kind(self) -> str:
+        return "use-cases"
 
     async def process(self, idea:str, proposal: Proposal) -> dict[str, Any]:
         """Generates the use-cases into the proposal.
@@ -40,27 +65,9 @@ class RequirementsGeneratorAgent(BaseAgent):
         Returns:
             Dictionary containing structured review results
         """
-        print("Generate items")
-        prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", self._build_system_prompt()),
-                ("human", """There is an existing list of use-cases defined:
-                 {items}
-
-                 The features are derived from the user's idea:
-                 {idea}
-
-                 Additional changes the user wants:
-                 {changeRequest}
-
-                 Please list the use-cases of that idea!
-                 """),
-            ]
-        )
-
-        chain = prompt | self.llm
+        chain = self.prompt | self.llm
         result = await chain.ainvoke({
-            "items": "\n\t- ".join(proposal.proposedItems),
+            "items": "\n".join([f"{i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]),
             "idea": idea,
             "changeRequest": proposal.changeRequest,
         })
