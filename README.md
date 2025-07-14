@@ -22,35 +22,7 @@ To dump the LangGraph mermaid diagram, run:
 make dump-graph
 ```
 
-Old graph:
-```mermaid
----
-config:
-  flowchart:
-    curve: linear
----
-graph TD;
-	__start__([<p>__start__</p>]):::first
-	idea_curator(idea_curator)
-	spec_writer(spec_writer)
-	evaluator(evaluator)
-	human_review(human_review<hr/><small><em>__interrupt = before</em></small>)
-	__end__([<p>__end__</p>]):::last
-	__start__ --> idea_curator;
-	evaluator -. &nbsp;end&nbsp; .-> __end__;
-	evaluator -. &nbsp;continue&nbsp; .-> human_review;
-	human_review -. &nbsp;continue&nbsp; .-> __end__;
-	human_review -. &nbsp;revise&nbsp; .-> spec_writer;
-	idea_curator -. &nbsp;end&nbsp; .-> __end__;
-	idea_curator -. &nbsp;continue&nbsp; .-> spec_writer;
-	spec_writer -. &nbsp;end&nbsp; .-> __end__;
-	spec_writer -. &nbsp;continue&nbsp; .-> evaluator;
-	classDef default fill:#f2f0ff,line-height:1.2
-	classDef first fill-opacity:0
-	classDef last fill:#bfb6fc
-```
-
-New graph (top-level; each node is actually a sub graph):
+Main Graph (top-level; each node is actually a sub graph):
 ```mermaid
 ---
 config:
@@ -72,4 +44,29 @@ graph TD;
 	classDef default fill:#f2f0ff,line-height:1.2
 	classDef first fill-opacity:0
 	classDef last fill:#bfb6fc
+
+```
+Sub graph (used within each `requirements_analysis`, `techstack_discovery`, `task_creation` in the graph above)
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	requirements_agent(requirements_agent)
+	review_agent(review_agent)
+	human_review(human_review)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> requirements_agent;
+	human_review -. &nbsp;approved&nbsp; .-> __end__;
+	human_review -. &nbsp;rejected&nbsp; .-> requirements_agent;
+	requirements_agent --> review_agent;
+	review_agent -. &nbsp;approved&nbsp; .-> human_review;
+	review_agent -. &nbsp;rejected&nbsp; .-> requirements_agent;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+
 ```
