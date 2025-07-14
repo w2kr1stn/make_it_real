@@ -101,10 +101,8 @@ class IdeationWorkflow:
         self, state: WorkflowState, key: str, agent: RequirementsGeneratorAgent
     ) -> dict[str, Any]:
         print(f"{key} requirement analysis")
+        result = await agent.process(state)
         proposal = state.get(key)
-
-        result = await agent.process(proposal=proposal, idea=state.get("idea"))
-
         proposal.proposed_items = result["items"]
         proposal.change_request = None
 
@@ -116,8 +114,8 @@ class IdeationWorkflow:
         self, state: WorkflowState, key: str, agent: BaseAgent
     ) -> dict[str, Any]:
         print(f"{key} review by agent")
+        result = await agent.process(state)
         proposal = state.get(key)
-        result = await agent.process(proposal=proposal, idea=state.get("idea"))
         proposal.agent_approved = result["approved"]
         proposal.change_request = result["changes"] or ""
 

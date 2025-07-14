@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from makeitreal.agents.base_agent import BaseAgent
 from makeitreal.config import openai_settings
-from makeitreal.graph.state import Proposal
+from makeitreal.graph.state import WorkflowState
 
 
 class ReviewResult(BaseModel):
@@ -21,20 +21,21 @@ class ReviewResult(BaseModel):
 class RequirementsReviewAgent(BaseAgent):
     """Agent responsible for evaluating technical specifications for feasibility and risk."""
 
-    def __init__(self) -> None:
-        """Initialize the Requirements review agent."""
+    def __init__(self, proposal_key="features", kind="use-cases") -> None:
+        """Initialize agent."""
         super().__init__("RequirementsReviewAgent")
-        self.llm = ChatOpenAI(
+        self._llm = ChatOpenAI(
             model=openai_settings.openai_model,
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
         ).with_structured_output(ReviewResult, method="function_calling")
-        self._init_prompt()
+        self._proposal_key = proposal_key
+        self._prompt = self._build_prompt(kind)
 
-    def _init_prompt(self):
-        self.prompt = ChatPromptTemplate(
+    def _build_prompt(self, kind: str) -> ChatPromptTemplate:
+        return ChatPromptTemplate(
             partial_variables={
-                "kind": self._kind(),
+                "kind": kind,
             },
             messages=[
                 ("system", self._build_review_system_prompt()),
@@ -58,10 +59,7 @@ class RequirementsReviewAgent(BaseAgent):
             ],
         )
 
-    def _kind(self) -> str:
-        return "use-cases"
-
-    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
+    async def process(self, state: WorkflowState) -> dict[str, Any]:
         """Reviewes the suggested changes to the proposal.
 
         Args:
@@ -70,13 +68,14 @@ class RequirementsReviewAgent(BaseAgent):
         Returns:
             Dictionary containing structured review results
         """
-        chain = self.prompt | self.llm
+        proposal = state[self._proposal_key]
+        chain = self._prompt | self._llm
         result = await chain.ainvoke(
             {
                 "items": "\n".join(
                     [f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]
                 ),
-                "idea": idea,
+                "idea": state.get("idea"),
             }
         )
         print("review results")
