@@ -7,6 +7,7 @@ services:
     entrypoint: ["sleep", "infinity"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Docker socket sharing
+      - ./.state:/.state
     depends_on:
       # - localai
       - mcp-github
