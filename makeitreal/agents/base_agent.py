@@ -18,7 +18,7 @@ class BaseAgent(ABC):
         self.name = name
 
     @abstractmethod
-    async def process(self, proposal: Proposal, idea: str) -> dict[str, Any]:
+    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
         """Process input data and return structured output.
 
         Args:
