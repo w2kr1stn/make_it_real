@@ -3,6 +3,8 @@ import asyncio
 import typer
 
 from makeitreal.graph import IdeationWorkflow
+from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
+from makeitreal.agents.requirements_review_agent import RequirementsReviewAgent
 
 app = typer.Typer(help="Dump workflow graph")
 
@@ -10,7 +12,16 @@ app = typer.Typer(help="Dump workflow graph")
 async def _dump(workflow: IdeationWorkflow) -> None:
     """Dump the AI workflow graph mermaid diagram."""
     await workflow.ainit()
+    
+
+    print("Main Graph")
+    print("```mermaid")
     print(workflow.graph.get_graph().draw_mermaid())
+    print("```")
+    print("Sub Graph")
+    print("```mermaid")
+    print((await workflow._build_proposal_graph(key="features",generator_agent=RequirementsGeneratorAgent(),review_agent=RequirementsReviewAgent())).get_graph().draw_mermaid())
+    print("```")
 
 
 @app.command()
