@@ -70,7 +70,7 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
         # Update the input with tool context if available
         final_input = input_data.copy()
         if tool_context:
-            final_input["idea"] = final_input["idea"] + tool_context
+            final_input["idea"] = final_input["idea"].content + tool_context
 
         # Use structured output LLM for final result
         result = await (self.prompt | self.llm).ainvoke(final_input)
