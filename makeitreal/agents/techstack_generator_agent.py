@@ -40,7 +40,8 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
                   The idea includes the following use-cases:
                   {features}
 
-                  Based on the idea and use-cases, the following tech stack has been identified already:
+                  Based on the idea and use-cases,
+                  the following tech stack has been identified already:
                   {items}
 
                   I want to change the tech stack as follows:

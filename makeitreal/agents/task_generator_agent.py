@@ -1,7 +1,9 @@
 """task list generator agent."""
 
-from .requirements_generator_agent import RequirementsGeneratorAgent
 from makeitreal.graph.state import WorkflowState
+
+from .requirements_generator_agent import RequirementsGeneratorAgent
+
 
 class TaskGeneratorAgent(RequirementsGeneratorAgent):
     """Agent responsible for generating the task list."""
@@ -26,7 +28,8 @@ class TaskGeneratorAgent(RequirementsGeneratorAgent):
                   I want to change the task list as follows:
                   {change_request}
 
-                  Please propose a list of tasks to cover all the mentioned features, taking the given tech stack into account!
+                  Please propose a list of tasks to cover all the mentioned features,
+                  taking the given tech stack into account!
                   """
 
     def _additional_variables(self, state: WorkflowState) -> dict[str, str]:

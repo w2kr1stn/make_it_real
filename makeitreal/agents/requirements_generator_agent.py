@@ -77,7 +77,8 @@ class RequirementsGeneratorAgent(BaseAgent):
                 "items": self._items2str(proposal.proposed_items),
                 "idea": state.get("idea"),
                 "change_request": proposal.change_request,
-            } | self._additional_variables(state)
+            }
+            | self._additional_variables(state)
         )
         print("generator results")
         print(result.model_dump())
