@@ -11,9 +11,12 @@ from langgraph.types import interrupt
 from makeitreal.agents.base_agent import BaseAgent
 from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
 from makeitreal.agents.requirements_review_agent import RequirementsReviewAgent
+from makeitreal.agents.task_generator_agent import TaskGeneratorAgent
+from makeitreal.agents.task_review_agent import TaskReviewAgent
 from makeitreal.agents.techstack_generator_agent import TechStackGeneratorAgent
 from makeitreal.agents.techstack_review_agent import TechStackReviewAgent
 from makeitreal.graph.state import Proposal, WorkflowState
+
 
 
 class IdeationWorkflow:
@@ -46,7 +49,7 @@ class IdeationWorkflow:
         workflow.add_node(
             "task_creation",
             await self._build_proposal_graph(
-                "tasks", RequirementsGeneratorAgent(), RequirementsReviewAgent()
+                "tasks", TaskGeneratorAgent(), TaskReviewAgent()
             ),
         )
         workflow.add_node("log_tasks", self._log_tasks)
@@ -99,13 +102,6 @@ class IdeationWorkflow:
     ) -> dict[str, Any]:
         print(f"{key} requirement analysis")
         proposal = state.get(key)
-        proposal.proposed_items = proposal.proposed_items or [
-            f"{key} item 1",
-            f"{key} item 2",
-            f"{key} item 3",
-            f"{key} item 4",
-            f"{key} item 5",
-        ]
 
         result = await agent.process(proposal=proposal, idea=state.get("idea"))
 
@@ -156,7 +152,6 @@ class IdeationWorkflow:
             thread_id = str(uuid.uuid4())
 
         initial_state = {
-            # TODO: check if props can be accessed directly
             "messages": [HumanMessage(content=idea)],
             "idea": HumanMessage(content=idea),
             "features": Proposal(),
