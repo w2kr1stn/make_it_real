@@ -8,11 +8,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import interrupt
 
-from ..agents2.base_agent import BaseAgent
-from ..agents2.requirements_generator_agent import RequirementsGeneratorAgent
-from ..agents2.requirements_review_agent import RequirementsReviewAgent
-from ..agents2.techstack_generator_agent import TechStackGeneratorAgent
-from ..agents2.techstack_review_agent import TechStackReviewAgent
+from ..agents.base_agent import BaseAgent
+from ..agents.requirements_generator_agent import RequirementsGeneratorAgent
+from ..agents.requirements_review_agent import RequirementsReviewAgent
+from ..agents.techstack_generator_agent import TechStackGeneratorAgent
+from ..agents.techstack_review_agent import TechStackReviewAgent
 from .state import Proposal, WorkflowState
 
 

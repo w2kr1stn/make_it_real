@@ -2,7 +2,7 @@ import asyncio
 
 import typer
 
-from .graph2 import IdeationWorkflow
+from .graph import IdeationWorkflow
 
 app = typer.Typer(help="Dump workflow graph")
 

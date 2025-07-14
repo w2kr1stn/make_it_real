@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from ..graph2.state import Proposal
+from ..graph.state import Proposal
 
 
 class BaseAgent(ABC):

@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from ..config import openai_settings
-from ..graph2.state import Proposal
+from ..graph.state import Proposal
 from .base_agent import BaseAgent
 
 

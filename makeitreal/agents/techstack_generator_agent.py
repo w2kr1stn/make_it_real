@@ -6,7 +6,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import ToolNode
 
 from ..config import openai_settings
-from ..graph2.state import Proposal
+from ..graph.state import Proposal
 from ..tools import search_library_docs, search_suitable_techstack
 from .requirements_generator_agent import RequirementsGeneratorAgent
 
