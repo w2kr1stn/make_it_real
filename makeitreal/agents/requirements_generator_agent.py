@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from makeitreal.agents.base_agent import BaseAgent
 from makeitreal.config import openai_settings
-from makeitreal.graph.state import Proposal
+from makeitreal.graph.state import Proposal, WorkflowState
 
 
 class ProposalResult(BaseModel):
@@ -20,44 +20,48 @@ class ProposalResult(BaseModel):
 class RequirementsGeneratorAgent(BaseAgent):
     """Agent responsible for generating items."""
 
-    def __init__(self) -> None:
-        """Initialize the Requirements generator agent."""
+    def __init__(self, proposal_key="features", kind="use-cases") -> None:
+        """Initialize agent."""
         super().__init__("RequirementsGeneratorAgent")
-        self.llm = ChatOpenAI(
+        self._llm = ChatOpenAI(
             model=openai_settings.openai_model,
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
         ).with_structured_output(ProposalResult, method="function_calling")
-        self._init_prompt()
+        self._proposal_key = proposal_key
+        self._prompt = self._build_prompt(kind)
 
-    def _init_prompt(self):
-        self.prompt = ChatPromptTemplate(
+    def _build_prompt(self, kind: str) -> ChatPromptTemplate:
+        return ChatPromptTemplate(
             partial_variables={
-                "kind": self._kind(),
+                "kind": kind,
             },
             messages=[
                 ("system", self._build_system_prompt()),
-                (
-                    "human",
-                    """I have the following idea:
-                 {idea}
-
-                 Based on the idea, the following {kind} have been identified already:
-                 {items}
-
-                 I want additional changes:
-                 {change_request}
-
-                 Please list the {kind} of that idea!
-                 """,
-                ),
+                ("human", self._build_human_prompt()),
             ],
         )
 
-    def _kind(self) -> str:
-        return "use-cases"
+    def _build_human_prompt(self) -> str:
+        return """I have the following idea:
+                  {idea}
 
-    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
+                  Based on the idea, the following {kind} have been identified already:
+                  {items}
+
+                  I want additional changes:
+                  {change_request}
+
+                  Please list the {kind} of that idea!
+                  """
+
+    def _additional_variables(self, state: WorkflowState) -> dict[str, str]:
+        return {}
+
+    def _items2str(self, items: list[Proposal]) -> str:
+        return "\n".join([f"{i + 1}. {x}" for i, x in enumerate(items)])
+
+    async def process(self, state: WorkflowState) -> dict[str, Any]:
         """Generates the use-cases into the proposal.
 
         Args:
@@ -66,15 +70,14 @@ class RequirementsGeneratorAgent(BaseAgent):
         Returns:
             Dictionary containing structured review results
         """
-        chain = self.prompt | self.llm
+        proposal = state[self._proposal_key]
+        chain = self._prompt | self._llm
         result = await chain.ainvoke(
             {
-                "items": "\n".join(
-                    [f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]
-                ),
-                "idea": idea,
+                "items": self._items2str(proposal.proposed_items),
+                "idea": state.get("idea"),
                 "change_request": proposal.change_request,
-            }
+            } | self._additional_variables(state)
         )
         print("generator results")
         print(result.model_dump())

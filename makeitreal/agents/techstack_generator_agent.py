@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode
 
 from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
 from makeitreal.config import openai_settings
-from makeitreal.graph.state import Proposal
+from makeitreal.graph.state import WorkflowState
 from makeitreal.tools import search_library_docs, search_suitable_techstack
 
 
@@ -15,8 +15,8 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
     """Agent responsible for generating tech stack."""
 
     def __init__(self) -> None:
-        """Initialize the Tech Stack generator agent."""
-        super().__init__()
+        """Initialize agent."""
+        super().__init__(proposal_key="tech_stack", kind="tech stack items")
         self.name = "TechStackGeneratorAgent"
 
         # Initialize tools
@@ -27,25 +27,41 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
         self.tool_node = ToolNode(self.tools)
 
         # Create a separate LLM instance for tool calling (without structured output)
-        self.llm_with_tools = ChatOpenAI(
+        self._llm_with_tools = ChatOpenAI(
             model=openai_settings.openai_model,
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
         ).bind_tools(self.tools)
 
-    def _kind(self) -> str:
-        return "tech stack items"
+    def _build_human_prompt(self) -> str:
+        return """I have the following idea:
+                  {idea}
 
-    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
+                  The idea includes the following use-cases:
+                  {features}
+
+                  Based on the idea and use-cases, the following tech stack has been identified already:
+                  {items}
+
+                  I want to change the tech stack as follows:
+                  {change_request}
+
+                  Please propose a tech stack that suits the idea and use-cases well!
+                  """
+
+    async def process(self, state: WorkflowState) -> dict[str, Any]:
         """Generates the tech stack items into the proposal´"""
+        features = state.get("features")
+        tech_stack = state.get("tech_stack")
         input_data = {
-            "items": "\n".join([f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]),
-            "idea": idea,
-            "change_request": proposal.change_request,
+            "items": self._items2str(tech_stack.proposed_items),
+            "idea": state.get("idea"),
+            "change_request": tech_stack.change_request,
+            "features": self._items2str(features.proposed_items),
         }
 
-        # Check if tools should be used
-        tool_response = await (self.prompt | self.llm_with_tools).ainvoke(input_data)
+        # Decide whether to use tools
+        tool_response = await (self._prompt | self._llm_with_tools).ainvoke(input_data)
 
         # Prepare context for final structured output
         tool_context = ""
@@ -73,7 +89,7 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
             final_input["idea"] = final_input["idea"].content + tool_context
 
         # Use structured output LLM for final result
-        result = await (self.prompt | self.llm).ainvoke(final_input)
+        result = await (self._prompt | self._llm).ainvoke(final_input)
 
         return result.model_dump()
 
