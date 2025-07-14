@@ -5,22 +5,35 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     entrypoint: ["sleep", "infinity"]
-    depends_on:
-      - localai
-      - mcp-github
-  localai:
-    image: localai/localai:v3.1.1-vulkan
-    privileged: true
-    ports:
-    - "8080:8080"
     volumes:
-      - "localai-models:/models"
-      - "localai-backends:/backends"
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket sharing
+    depends_on:
+      # - localai
+      - mcp-github
+      - context7-mcp
+
+  # localai:
+  #   image: localai/localai:v3.1.1-vulkan
+  #   privileged: true
+  #   ports:
+  #   - "8080:8080"
+  #   volumes:
+  #     - "localai-models:/models"
+  #     - "localai-backends:/backends"
 
   mcp-github:
     image: ghcr.io/github/github-mcp-server
     stdin_open: true
     env_file: .mcp.env
+
+  context7-mcp:
+    image: mcp/context7@sha256:1174e6a29634a83b2be93ac1fefabf63265f498c02c72201fe3464e687dd8836
+    stdin_open: true
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_TRANSPORT=http
+
 volumes:
   localai-models:
   localai-backends:

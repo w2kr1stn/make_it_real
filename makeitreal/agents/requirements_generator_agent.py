@@ -4,11 +4,11 @@ from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-
-from ..config import openai_settings
-from .base_agent import BaseAgent
-from ..graph2.state import Proposal
 from pydantic import BaseModel, Field
+
+from makeitreal.agents.base_agent import BaseAgent
+from makeitreal.config import openai_settings
+from makeitreal.graph.state import Proposal
 
 
 class ProposalResult(BaseModel):
@@ -27,36 +27,37 @@ class RequirementsGeneratorAgent(BaseAgent):
             model=openai_settings.openai_model,
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
-        ).with_structured_output(
-            ProposalResult, method="function_calling"
-        )
+        ).with_structured_output(ProposalResult, method="function_calling")
         self._init_prompt()
 
     def _init_prompt(self):
         self.prompt = ChatPromptTemplate(
-            partial_variables = {
+            partial_variables={
                 "kind": self._kind(),
             },
-            messages = [
+            messages=[
                 ("system", self._build_system_prompt()),
-                ("human", """I have the following idea:
+                (
+                    "human",
+                    """I have the following idea:
                  {idea}
 
                  Based on the idea, the following {kind} have been identified already:
                  {items}
 
                  I want additional changes:
-                 {changeRequest}
+                 {change_request}
 
                  Please list the {kind} of that idea!
-                 """),
+                 """,
+                ),
             ],
         )
 
     def _kind(self) -> str:
         return "use-cases"
 
-    async def process(self, idea:str, proposal: Proposal) -> dict[str, Any]:
+    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
         """Generates the use-cases into the proposal.
 
         Args:
@@ -66,11 +67,15 @@ class RequirementsGeneratorAgent(BaseAgent):
             Dictionary containing structured review results
         """
         chain = self.prompt | self.llm
-        result = await chain.ainvoke({
-            "items": "\n".join([f"{i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]),
-            "idea": idea,
-            "changeRequest": proposal.changeRequest,
-        })
+        result = await chain.ainvoke(
+            {
+                "items": "\n".join(
+                    [f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]
+                ),
+                "idea": idea,
+                "change_request": proposal.change_request,
+            }
+        )
         print("generator results")
         print(result.model_dump())
 
@@ -79,6 +84,7 @@ class RequirementsGeneratorAgent(BaseAgent):
     def _build_system_prompt(self) -> str:
         """Build comprehensive evaluation prompt for the LLM."""
         return """
-You are a senior technical requirements engineer with expertise in software development and product management.
+You are a senior technical requirements engineer with expertise
+in software development and product management.
 Your task is to derive the minimum set of features needed from the user's idea.
 """

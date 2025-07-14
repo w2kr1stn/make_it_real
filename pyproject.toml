@@ -21,10 +21,14 @@ dependencies = [
     "langchain>=0.3.26",
     "langchain-openai>=0.3.27",
     "langchain-core>=0.3.68",
+    "langchain-community>=0.3.9",
     "langgraph>=0.5.2",
     "pydantic>=2.11.7",
-    "typer[all]>=0.16.0",
+    "typer>=0.16.0",
     "pydantic-settings>=2.10.1",
+    "aiohttp>=3.8.0",
+    "ddgs>=6.3.0",
+    "beautifulsoup4>=4.13.4",
 ]
 
 [project.urls]
@@ -34,13 +38,11 @@ Repository = "https://github.com/w2kr1stn/make_it_real"
 [project.scripts]
 format = "manage:format"
 test = "manage:test"
-aiask = "aiask.cli:app"
 makeitreal = "makeitreal.cli:app"
-makeitreal2 = "makeitreal.cli2:app"
-dump_graph = "makeitreal.dump_graph:app"
+dumpgraph = "makeitreal.sub_commands.dump_graph:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["aiask", "makeitreal"]
+packages = ["makeitreal"]
 
 [dependency-groups]
 dev = [

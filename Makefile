@@ -6,7 +6,7 @@ all: help
 ##@ Development
 
 run: compose-up ## Run the containerized CLI.
-	docker compose exec make-it-real uv run makeitreal2 "$(IDEA)"
+	docker compose exec make-it-real uv run makeitreal "$(IDEA)"
 
 dump-graph: compose-up ## Dump the workflow graph mermaid-formatted.
 	docker compose exec make-it-real uv run dump_graph
