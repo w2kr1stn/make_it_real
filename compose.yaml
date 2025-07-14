@@ -7,10 +7,9 @@ services:
     entrypoint: ["sleep", "infinity"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Docker socket sharing
-      - ./.state:/.state
+      - ./.state:/make_it_real/.state
     depends_on:
       # - localai
-      - mcp-github
       - context7-mcp
 
   # localai:
@@ -21,11 +20,6 @@ services:
   #   volumes:
   #     - "localai-models:/models"
   #     - "localai-backends:/backends"
-
-  mcp-github:
-    image: ghcr.io/github/github-mcp-server
-    stdin_open: true
-    env_file: .mcp.env
 
   context7-mcp:
     image: mcp/context7@sha256:1174e6a29634a83b2be93ac1fefabf63265f498c02c72201fe3464e687dd8836
