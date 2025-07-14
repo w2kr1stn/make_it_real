@@ -39,9 +39,9 @@ class TechStackGeneratorAgent(RequirementsGeneratorAgent):
     async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
         """Generates the tech stack items into the proposal´"""
         input_data = {
-            "items": "\n".join([f"{i + 1}. {x}" for i, x in enumerate(proposal.proposedItems)]),
+            "items": "\n".join([f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]),
             "idea": idea,
-            "changeRequest": proposal.changeRequest,
+            "change_request": proposal.change_request,
         }
 
         # Check if tools should be used

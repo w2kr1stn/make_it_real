@@ -4,11 +4,11 @@ from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+from pydantic import BaseModel, Field
 
 from ..config import openai_settings
-from .base_agent import BaseAgent
 from ..graph2.state import Proposal
-from pydantic import BaseModel, Field
+from .base_agent import BaseAgent
 
 
 class ReviewResult(BaseModel):
@@ -28,37 +28,40 @@ class RequirementsReviewAgent(BaseAgent):
             model=openai_settings.openai_model,
             api_key=openai_settings.openai_api_key,
             base_url=openai_settings.openai_base_url,
-        ).with_structured_output(
-            ReviewResult, method="function_calling"
-        )
+        ).with_structured_output(ReviewResult, method="function_calling")
         self._init_prompt()
 
     def _init_prompt(self):
         self.prompt = ChatPromptTemplate(
-            partial_variables = {
+            partial_variables={
                 "kind": self._kind(),
             },
-            messages = [
+            messages=[
                 ("system", self._build_review_system_prompt()),
-                ("human", """I have the following idea:
+                (
+                    "human",
+                    """I have the following idea:
                  {idea}
 
                  Based on the idea, the following {kind} have been identified:
                  {items}
 
                  Please review the {kind} meticulously and ask yourself the following questions:
-                 * Are there any {kind} missing in the list that would be required to make the idea work? If so, they should be added.
-                 * Are there any {kind} in the list that are not strictly required for an MVP implementation? If so, they should be removed.
+                 * Are there any {kind} missing in the list that would be required
+                 to make the idea work? If so, they should be added.
+                 * Are there any {kind} in the list that are not strictly required
+                 for an MVP implementation? If so, they should be removed.
 
                  Finally please propose changes, if necessary, or approve otherwise!
-                 """),
+                 """,
+                ),
             ],
         )
 
     def _kind(self) -> str:
         return "use-cases"
 
-    async def process(self, idea:str, proposal: Proposal) -> dict[str, Any]:
+    async def process(self, idea: str, proposal: Proposal) -> dict[str, Any]:
         """Reviewes the suggested changes to the proposal.
 
         Args:
@@ -68,10 +71,14 @@ class RequirementsReviewAgent(BaseAgent):
             Dictionary containing structured review results
         """
         chain = self.prompt | self.llm
-        result = await chain.ainvoke({
-            "items": "\n".join([f"{i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]),
-            "idea": idea,
-        })
+        result = await chain.ainvoke(
+            {
+                "items": "\n".join(
+                    [f"{i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)]
+                ),
+                "idea": idea,
+            }
+        )
         print("review results")
         print(result.model_dump())
 
@@ -80,7 +87,8 @@ class RequirementsReviewAgent(BaseAgent):
     def _build_review_system_prompt(self) -> str:
         """Build comprehensive evaluation prompt for the LLM."""
         return """
-You are a senior technical requirements engineer with expertise in software development and product management.
+You are a senior technical requirements engineer with expertise
+in software development and product management.
 You have the task to review a set of features which where derived by a users idea.
 
 Whilst reviewing the features, you will be given the opportunity to request changes to the features.

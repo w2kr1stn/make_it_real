@@ -3,12 +3,9 @@
 import asyncio
 
 import typer
+from langgraph.types import Command
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm, Prompt
-from rich.table import Table
-from random import randint
-from langgraph.types import Command, interrupt
 
 from .graph2 import IdeationWorkflow
 
@@ -41,12 +38,15 @@ async def _run_idea(description: str, verbose: bool):
     with console.status("[green]Workflow processing...", spinner="dots"):
         state = await workflow.run(description, thread_id)
 
-    while len(state.get('__interrupt__') or []) > 0:
-        interrupts = state['__interrupt__']
-        proposal_key = interrupts[0].value['key']
-        state = interrupts[0].value['state']
+    while len(state.get("__interrupt__") or []) > 0:
+        interrupts = state["__interrupt__"]
+        proposal_key = interrupts[0].value["key"]
+        state = interrupts[0].value["state"]
         proposal = state.get(proposal_key)
-        print(f"{proposal_key}:"+"".join([f"\n  {i+1}. {x}" for i,x in enumerate(proposal.proposedItems)]))
+        print(
+            f"{proposal_key}:"
+            + "".join([f"\n  {i + 1}. {x}" for i, x in enumerate(proposal.proposed_items)])
+        )
 
         approved = False
         while True:
@@ -54,10 +54,11 @@ async def _run_idea(description: str, verbose: bool):
             approved = not approval or approval.lower() == "y"
             if approved or approval.lower() == "n":
                 break
-        changeRequest = ''
+        change_request = ""
         if not approved:
-            changeRequest = input(f"What do you want to change?")
-        state = await workflow.graph.ainvoke(Command(resume=changeRequest), config)
+            change_request = input("What do you want to change?")
+        state = await workflow.graph.ainvoke(Command(resume=change_request), config)
+
 
 if __name__ == "__main__":
     app()

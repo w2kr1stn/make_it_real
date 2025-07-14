@@ -2,6 +2,7 @@
 
 from .requirements_review_agent import RequirementsReviewAgent
 
+
 class TechStackReviewAgent(RequirementsReviewAgent):
     """Agent responsible for reviewing the tech stack."""
 
