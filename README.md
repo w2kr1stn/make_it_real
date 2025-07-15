@@ -1,6 +1,10 @@
 # make_it_real
 
-Multi-agent end user application with modern chatbot UI to structure ideas for apps, prepare them technically and work out a structured plan to systematically implement a first, functional prototype.
+A multi-agent CLI to flesh out project ideas.
+
+AI agents derive use-cases, a tech stack as well as tasks from a given idea, letting the user confirm each (human-in-the-loop) after it was successfully reviewed by another AI agent.
+
+It is written in Python using the LangChain and LangGraph frameworks.
 
 ## Environment setup
 
@@ -17,14 +21,14 @@ To build and run the containerized CLI:
 make run IDEA='task management app for developers'
 ```
 
-## Graph
+## Graph of the AI workflow
 
 To dump the LangGraph mermaid diagram, run:
 ```sh
 make dump-graph
 ```
 
-Main Graph (top-level; the nodes `requirements_analysis`, `techstack_discovery`, `task_creation` are actually sub graphs):
+Main graph of the AI workflow (top-level; the nodes `requirements_analysis`, `techstack_discovery`, `task_creation` are actually sub graphs):
 ```mermaid
 ---
 config:
