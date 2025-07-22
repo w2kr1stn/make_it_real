@@ -14,7 +14,7 @@ async def test_requirements_generator_agent():
     state = WorkflowState(
         idea="""
         I want to have an app written in python (because i know how to write python code).
-        The app should enables me to manges tasks.
+        The app should enable me to manage tasks.
         """,
         features=Proposal(),
         tech_stack=Proposal(),
