@@ -29,6 +29,7 @@ dependencies = [
     "aiohttp>=3.8.0",
     "ddgs>=6.3.0",
     "beautifulsoup4>=4.13.4",
+    "deepeval>=3.3.0",
 ]
 
 [project.urls]
@@ -38,6 +39,7 @@ Repository = "https://github.com/w2kr1stn/make_it_real"
 [project.scripts]
 format = "manage:format"
 test = "manage:test"
+evaluation = "manage:evaluation"
 makeitreal = "makeitreal.cli:app"
 dumpgraph = "makeitreal.sub_commands.dump_graph:app"
 
