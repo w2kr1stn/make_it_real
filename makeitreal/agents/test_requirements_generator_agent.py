@@ -35,6 +35,4 @@ async def test_requirements_generator_agent():
         Add, edit, and delete tasks
         """,
     )
-
-
     assert_test(test_case, [test_metrics])
