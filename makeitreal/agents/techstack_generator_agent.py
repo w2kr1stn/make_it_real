@@ -7,7 +7,7 @@ from langgraph.prebuilt import ToolNode
 
 from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
 from makeitreal.config import openai_settings
-from makeitreal.graph.state import WorkflowState
+from makeitreal.state.state import WorkflowState
 from makeitreal.tools import search_library_docs, search_suitable_techstack
 
 

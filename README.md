@@ -14,6 +14,19 @@ To run the containerized CLI, you need to have `make` and [docker](https://docs.
 
 Copy `.env_example` to `.env` and specify your OpenAI API key as value of `OPENAI_API_KEY`.
 
+
+### Local dev container
+```
+docker run --env-file .env --rm -v $PWD:/app -it ghcr.io/astral-sh/uv:debian bash
+```
+
+From within the container the tests can be executed:
+
+```
+cd app/
+uv run evaluation
+```
+
 ## Run
 
 To build and run the containerized CLI:
