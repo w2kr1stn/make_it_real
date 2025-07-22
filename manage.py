@@ -29,7 +29,7 @@ def test() -> None:
 def evaluation() -> None:
     """Run evaluations with deepeval."""
     commands = [
-        ["uv", "run", "pytest","makeitreal/agents"],
+        ["uv", "run", "pytest", "makeitreal/agents"],
     ]
     for cmd in commands:
         subprocess.run(cmd, check=True)  # nosec B603,B607 - trusted dev commands
