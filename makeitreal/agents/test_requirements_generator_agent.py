@@ -30,7 +30,6 @@ async def test_requirements_generator_agent():
         threshold=0.5,
     )
     test_case = LLMTestCase(
-        # input=state.get("idea"),
         actual_output="\n".join(answer.get("items", [])),
         expected_output="""
         Add, edit, and delete tasks
