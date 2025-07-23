@@ -6,7 +6,7 @@ from deepeval.metrics import GEval
 from deepeval.test_case import LLMTestCase, LLMTestCaseParams
 
 from makeitreal.agents.requirements_generator_agent import RequirementsGeneratorAgent
-from makeitreal.state.state import Proposal, WorkflowState
+from makeitreal.state import Proposal, WorkflowState
 
 
 @pytest.mark.asyncio
@@ -30,6 +30,7 @@ async def test_requirements_generator_agent():
         threshold=0.5,
     )
     test_case = LLMTestCase(
+        input=state["idea"],
         actual_output="\n".join(answer.get("items", [])),
         expected_output="""
         Add, edit, and delete tasks

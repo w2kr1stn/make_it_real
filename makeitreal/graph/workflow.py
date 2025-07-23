@@ -18,7 +18,7 @@ from makeitreal.agents.task_generator_agent import TaskGeneratorAgent
 from makeitreal.agents.task_review_agent import TaskReviewAgent
 from makeitreal.agents.techstack_generator_agent import TechStackGeneratorAgent
 from makeitreal.agents.techstack_review_agent import TechStackReviewAgent
-from makeitreal.state.state import Proposal, WorkflowState
+from makeitreal.state import Proposal, WorkflowState
 
 
 class IdeationWorkflow:
