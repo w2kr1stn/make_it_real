@@ -1,6 +1,6 @@
 """task list generator agent."""
 
-from makeitreal.state.state import WorkflowState
+from makeitreal.state import WorkflowState
 
 from .requirements_generator_agent import RequirementsGeneratorAgent
 
