@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from makeitreal.state.state import Proposal
+from makeitreal.state import Proposal
 
 
 class BaseAgent(ABC):

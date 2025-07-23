@@ -15,6 +15,9 @@ dump-graph: compose-up ## Dump the workflow graph mermaid-formatted.
 compose-up: ## Start the compose project.
 	docker compose up -d --build --remove-orphans
 
+uv-shell: ## Run a dockerized shell with uv support.
+	docker run -it --env-file .env --rm -v "$$PWD":/app -w /app --entrypoint=sh ghcr.io/astral-sh/uv:0.8.2-python3.13-alpine
+
 ##@ General
 
 help: ## Display this help.

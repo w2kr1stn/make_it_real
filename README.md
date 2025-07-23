@@ -16,14 +16,13 @@ Copy `.env_example` to `.env` and specify your OpenAI API key as value of `OPENA
 
 
 ### Local dev container
-```
-docker run --env-file .env --rm -v $PWD:/app -it ghcr.io/astral-sh/uv:debian bash
+To start a containerized shell with `uv` support, run:
+```sh
+make uv-shell
 ```
 
-From within the container the tests can be executed:
-
-```
-cd app/
+From within the container tests can be executed as follows:
+```sh
 uv run evaluation
 ```
 

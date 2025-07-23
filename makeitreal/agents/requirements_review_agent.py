@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from makeitreal.agents.base_agent import BaseAgent
 from makeitreal.config import openai_settings
-from makeitreal.state.state import WorkflowState
+from makeitreal.state import WorkflowState
 
 
 class ReviewResult(BaseModel):
